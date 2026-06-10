@@ -78,7 +78,7 @@ import numpy as np, matplotlib.pyplot as plt
 import stylegan as M
 
 real = M.make_images(256)
-gan = M.StyleGANTorch().fit(real, steps=250, batch=32)
+gan = M.StyleGANTorch().fit(real, steps=150, batch=32)  # lighter retrain just for the picture
 fake = gan.generate(8)
 
 fig, axes = plt.subplots(2, 8, figsize=(12, 3.2))

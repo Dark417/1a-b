@@ -70,7 +70,7 @@ import numpy as np, matplotlib.pyplot as plt
 import dcgan as M
 
 real = M.make_images(256)
-gan = M.DCGANTorch().fit(real, steps=400, batch=64)
+gan = M.DCGANTorch().fit(real, steps=200, batch=64)  # lighter retrain just for the picture
 fake = gan.generate(8)
 
 fig, axes = plt.subplots(2, 8, figsize=(12, 3.2))

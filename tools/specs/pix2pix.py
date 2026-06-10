@@ -71,7 +71,7 @@ import numpy as np, matplotlib.pyplot as plt
 import pix2pix as M
 
 inp, tgt = M.make_pairs(256)
-gan = M.Pix2PixTorch().fit(inp, tgt, steps=400, batch=32)
+gan = M.Pix2PixTorch().fit(inp, tgt, steps=250, batch=32)  # lighter retrain just for the picture
 ti, tt = M.make_pairs(8, seed=123)
 pred = gan.generate(ti)
 

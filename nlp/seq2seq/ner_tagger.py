@@ -271,7 +271,7 @@ class BiLSTMCRF(nn.Module):
                 loss = self.loss(xb, yb)
                 opt.zero_grad(); loss.backward()
                 nn.utils.clip_grad_norm_(self.parameters(), 5.0)
-                opt.step(); total += float(loss)
+                opt.step(); total += loss.item()
             self.history.append(total / len(sents))
         return self
 
@@ -349,12 +349,20 @@ def demo():
     brute = log_sum_exp(np.array([crf.score_path(E, p) for p in product(range(K), repeat=4)]))
     print(f"           forward log Z = {logZ:.4f}  vs brute force {brute:.4f}")
 
-    # --- Train BiLSTM-CRF vs BiLSTM-softmax on the tagging task ---
-    sents, tags = make_tagging_data(n=400)
-    tr = slice(0, 340); te = slice(340, 400)
+    # standalone CRF training (forward-backward gradient on transitions only):
+    # given fixed emissions, the CRF should learn that gold paths beat the rest.
+    rng = np.random.default_rng(2)
+    Es = [rng.normal(size=(5, K)) for _ in range(30)]
+    ys = [LinearChainCRF(K).viterbi(e)[0] for e in Es]   # synthetic gold paths
+    crf2 = LinearChainCRF(K).fit(Es, ys, epochs=120, lr=0.1)
+    print(f"           standalone CRF NLL: {crf2.history[0]:.2f} -> {crf2.history[-1]:.2f}")
 
-    soft = BiLSTMCRF(len(WORDS), K, use_crf=False).fit(sents[tr], tags[tr], epochs=40)
-    crfm = BiLSTMCRF(len(WORDS), K, use_crf=True).fit(sents[tr], tags[tr], epochs=40)
+    # --- Train BiLSTM-CRF vs BiLSTM-softmax on the tagging task ---
+    sents, tags = make_tagging_data(n=200)
+    tr = slice(0, 150); te = slice(150, 200)
+
+    soft = BiLSTMCRF(len(WORDS), K, use_crf=False).fit(sents[tr], tags[tr], epochs=25)
+    crfm = BiLSTMCRF(len(WORDS), K, use_crf=True).fit(sents[tr], tags[tr], epochs=25)
     print(f"\nBiLSTM (softmax) token acc = {token_accuracy(soft, sents[te], tags[te]):.3f}")
     print(f"BiLSTM-CRF       token acc = {token_accuracy(crfm, sents[te], tags[te]):.3f}")
 
