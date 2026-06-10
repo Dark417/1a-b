@@ -87,7 +87,8 @@ extrapolation.
         md("## 5. Full model — a position-aware attention block (any scheme)"),
         show(MOD, "PosAwareAttention"),
         md("## 6. Train / run — verify the math + a tiny position-sensitive task"),
-        run_demo(MOD),
+        code("import torch; torch.set_num_threads(1)  # tiny CPU demo: avoid thread oversubscription\n"
+             f"import {MOD} as M\nM.demo()"),
         md("## 7. Visualization — sinusoidal heatmap, RoPE rotation, ALiBi bias"),
         code(r"""
 import matplotlib
