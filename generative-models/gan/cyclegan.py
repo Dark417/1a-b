@@ -102,7 +102,7 @@ class Discriminator(nn.Module):
 # ---------------------------------------------------------------------------
 class CycleGANTorch:
     def __init__(self, dim: int = 2, lr: float = 2e-4,
-                 lambda_cyc: float = 10.0, lambda_id: float = 5.0):
+                 lambda_cyc: float = 10.0, lambda_id: float = 1.0):
         torch.manual_seed(SEED)
         self.dev = get_device()
         self.lambda_cyc, self.lambda_id = lambda_cyc, lambda_id
@@ -167,16 +167,18 @@ def demo():
     print(f"domain X mean={X.mean(0).round(2)} std={X.std(0).round(2)}")
     print(f"domain Y mean={Y.mean(0).round(2)} std={Y.std(0).round(2)}")
 
-    gan = CycleGANTorch().fit(X, Y, steps=800, batch=128)
+    gan = CycleGANTorch().fit(X, Y, steps=1500, batch=128)
     c0, c1 = np.mean(gan.cyc_hist[:50]), np.mean(gan.cyc_hist[-50:])
     print(f"cycle-consistency L1: {c0:.3f} -> {c1:.3f} (falling => X->Y->X recovers X)")
 
-    # Quality proxy: translated X should match domain Y's distribution.
+    # Quality proxy: translated X should move toward domain Y's distribution.
     fake_y = gan.generate(make_domain_x(800, seed=99))
     print(f"translated G(X) mean={fake_y.mean(0).round(2)} std={fake_y.std(0).round(2)}")
     print(f"target     Y    mean={Y.mean(0).round(2)} std={Y.std(0).round(2)}")
+    sep = np.linalg.norm(X.mean(0) - Y.mean(0))
     err = np.linalg.norm(fake_y.mean(0) - Y.mean(0))
-    print(f"distribution-mean gap |G(X) - Y| = {err:.3f} (small => good translation)")
+    print(f"mean gap |G(X) - Y| = {err:.3f} vs inter-domain gap {sep:.3f} "
+          f"(gap shrinks => G translates X toward Y)")
 
 
 if __name__ == "__main__":

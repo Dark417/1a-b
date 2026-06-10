@@ -74,7 +74,7 @@ import cyclegan as M
 
 X = M.make_domain_x(800)
 Y = M.make_domain_y(800)
-gan = M.CycleGANTorch().fit(X, Y, steps=800, batch=128)
+gan = M.CycleGANTorch().fit(X, Y, steps=1500, batch=128)
 fake_y = gan.generate(M.make_domain_x(800, seed=99))
 
 fig, ax = plt.subplots(1, 2, figsize=(11, 4.5))
