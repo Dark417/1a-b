@@ -72,7 +72,7 @@ matplotlib.use("Agg")
 import numpy as np, torch, matplotlib.pyplot as plt
 import gpt as M
 
-torch.manual_seed(M.SEED); np.random.seed(M.SEED)
+torch.manual_seed(M.SEED); np.random.seed(M.SEED); torch.set_num_threads(1)
 
 # (a) the causal mask: lower-triangular "who can attend to whom"
 L = 10

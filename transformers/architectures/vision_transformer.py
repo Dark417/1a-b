@@ -191,6 +191,7 @@ def make_toy_images(n: int, size: int = 8, seed: int = SEED):
 def demo():
     torch.manual_seed(SEED)
     np.random.seed(SEED)
+    torch.set_num_threads(1)        # tiny CPU model: 1 thread avoids oversubscription
     dev = get_device()
 
     size, patch = 8, 4

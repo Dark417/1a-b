@@ -239,6 +239,7 @@ def make_reverse_data(n: int, L: int, vocab: int, seed: int = SEED):
 def demo():
     torch.manual_seed(SEED)
     np.random.seed(SEED)
+    torch.set_num_threads(1)        # tiny CPU model: 1 thread avoids oversubscription
     dev = get_device()
 
     # First: illustrate the span-corruption objective on one toy sentence.

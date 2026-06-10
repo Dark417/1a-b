@@ -148,6 +148,10 @@ class FeedForwardLMNumPy:
 import torch
 import torch.nn as nn
 
+# Single-threaded BLAS keeps tiny CPU models fast and deterministic (and avoids
+# a thread-pool stall on small LSTM workloads in constrained sandboxes).
+torch.set_num_threads(1)
+
 
 def get_device():
     """CUDA > MPS > CPU."""

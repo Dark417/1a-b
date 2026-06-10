@@ -175,6 +175,7 @@ def make_pattern_data(n: int, L: int, period: int, seed: int = SEED):
 def demo():
     torch.manual_seed(SEED)
     np.random.seed(SEED)
+    torch.set_num_threads(1)        # tiny CPU model: 1 thread avoids oversubscription
     dev = get_device()
 
     period, V, L = 5, 5, 12        # vocab == period (the cyclic alphabet)

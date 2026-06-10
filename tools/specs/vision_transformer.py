@@ -78,7 +78,7 @@ matplotlib.use("Agg")
 import numpy as np, torch, matplotlib.pyplot as plt
 import vision_transformer as M
 
-torch.manual_seed(M.SEED); np.random.seed(M.SEED)
+torch.manual_seed(M.SEED); np.random.seed(M.SEED); torch.set_num_threads(1)
 
 size, patch = 8, 4
 X_np, y_np = M.make_toy_images(384, size)

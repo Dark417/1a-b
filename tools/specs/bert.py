@@ -84,7 +84,7 @@ matplotlib.use("Agg")
 import numpy as np, torch, matplotlib.pyplot as plt
 import bert as M
 
-torch.manual_seed(M.SEED); np.random.seed(M.SEED)
+torch.manual_seed(M.SEED); np.random.seed(M.SEED); torch.set_num_threads(1)
 
 # (a) which positions get masked, on a small batch
 V, L, n = 24, 8, 12
