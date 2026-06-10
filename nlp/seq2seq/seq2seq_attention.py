@@ -280,21 +280,28 @@ def demo():
     # --- Train both attention variants on the reverse task ---
     src, tgt = make_reverse_data(n=512)
     tr = slice(0, 448); te = slice(448, 512)
+    models = {}
     for mode in ("bahdanau", "luong_dot"):
         torch.manual_seed(SEED)
         m = Seq2SeqAttention(attn_mode=mode)
         train(m, src[tr], tgt[tr], epochs=40)
         acc = sequence_accuracy(m, src[te], tgt[te])
+        models[mode] = m
         print(f"{mode:11s} reverse-task exact-sequence acc = {acc:.3f}  "
               f"(final loss {m.history[-1]:.3f})")
 
     # --- Show one decoded example with its attention alignment ---
+    m = models["bahdanau"]
     dev = next(m.parameters()).device
     s = src[te][0]
-    S = torch.tensor(_pad([s], len(s)), device=dev)
-    pred, attn = m.greedy_decode(S, max_len=len(s))
-    print(f"\nexample  src={s}  ->  pred={pred[0].cpu().tolist()}")
-    print("attention should be roughly anti-diagonal (reverse alignment).")
+    smax = max(len(x) for x in src[tr])               # pad as during training
+    S = torch.tensor(_pad([s], smax), device=dev)
+    pred, attn = m.greedy_decode(S, max_len=len(s) + 2)
+    out = pred[0].cpu().tolist()
+    out = out[:out.index(EOS) + 1] if EOS in out else out
+    print(f"\nexample  src={s}  ->  pred={out}   (reverse of the content tokens)")
+    print("attention is roughly anti-diagonal: output position i attends to "
+          "source position (len-1-i).")
 
 
 if __name__ == "__main__":
