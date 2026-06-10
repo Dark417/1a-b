@@ -73,55 +73,70 @@ def _is_main_guard(node) -> bool:
     return isinstance(node, ast.If) and "__main__" in ast.dump(node.test)
 
 
-def _render_source(module: str, names: list[str], all_targets: set[str],
-                   include_preamble: bool) -> str:
+def _chunk_module(module: str, name_lists: list[list[str]]) -> list[str]:
+    """Split a module's source (in ORIGINAL order) into one chunk per show-cell.
+
+    Chunk k contains every top-level node up to and including the last class /
+    function requested by show-cell k. This keeps source order intact, so
+    module-level code that references a class (registries, aliases) still runs
+    after that class is defined. Imports/helpers naturally land in chunk 0
+    (they precede the first requested target); trailing nodes join the last chunk.
+    """
     path = _find_module_file(module)
     text = path.read_text(encoding="utf-8")
-    tree = ast.parse(text)
-    body = list(tree.body)
+    body = list(ast.parse(text).body)
 
-    # drop the module docstring (it's redundant with the notebook markdown)
+    # drop the module docstring (redundant with the notebook markdown)
     if body and isinstance(body[0], ast.Expr) and isinstance(
             getattr(body[0], "value", None), ast.Constant) and isinstance(
             body[0].value.value, str):
         body = body[1:]
+    body = [n for n in body if not _is_main_guard(n)]   # drop `if __name__` demo guard
 
     def seg(node):
         s = ast.get_source_segment(text, node)
         return s if s is not None else ""
 
-    # requested classes/functions, in the order the spec asked for them
-    by_name = {_node_name(n): n for n in body if _node_name(n)}
-    target_src = "\n\n\n".join(seg(by_name[n]) for n in names if n in by_name)
-
-    parts = []
-    if include_preamble:
-        pre = [seg(n) for n in body
-               if _node_name(n) not in all_targets and not _is_main_guard(n)]
-        pre = [p for p in pre if p.strip()]
-        parts.append("\n\n".join(pre))
-    parts.append(target_src)
+    chunks: list[list[str]] = []
+    cur: list[str] = []
+    ci = 0
+    remaining = set(name_lists[0]) if name_lists else set()
+    for node in body:
+        cur.append(seg(node))
+        nm = _node_name(node)
+        if remaining is not None and nm in remaining:
+            remaining.discard(nm)
+            if not remaining:                          # cell ci fully collected
+                chunks.append(cur); cur = []; ci += 1
+                remaining = set(name_lists[ci]) if ci < len(name_lists) else None
+    if cur:                                            # trailing nodes
+        if chunks:
+            chunks[-1].extend(cur)
+        else:
+            chunks.append(cur)
+    while len(chunks) < len(name_lists):               # pad if a target was missing
+        chunks.append([])
 
     header = f"# ===== actual implementation from {module}.py ====="
-    return header + "\n" + "\n\n\n".join(p for p in parts if p.strip())
+    return [header + "\n" + "\n\n".join(p for p in ch if p.strip()) for ch in chunks]
 
 
 def finalize(cells: list) -> list:
-    """Resolve show-markers into real code cells (with one-time preamble)."""
-    targets: dict[str, set[str]] = {}
+    """Resolve show-markers into real, source-ordered code cells."""
+    order: dict[str, list[list[str]]] = {}
     for c in cells:
         if isinstance(c, tuple) and len(c) == 3 and c[0] == "__show__":
             _, mod, names = c
-            targets.setdefault(mod, set()).update(names)
+            order.setdefault(mod, []).append(names)
+    chunks = {mod: _chunk_module(mod, nls) for mod, nls in order.items()}
+    idx = {mod: 0 for mod in chunks}
 
-    seen: set[str] = set()
     out = []
     for c in cells:
         if isinstance(c, tuple) and len(c) == 3 and c[0] == "__show__":
-            _, mod, names = c
-            out.append(code(_render_source(
-                mod, names, targets[mod], include_preamble=mod not in seen)))
-            seen.add(mod)
+            _, mod, _names = c
+            i = idx[mod]; idx[mod] += 1
+            out.append(code(chunks[mod][i]))
         else:
             out.append(c)
     return out
