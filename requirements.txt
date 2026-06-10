@@ -1,0 +1,7 @@
+# Core tutorial stack — everything runs on CPU.
+numpy>=1.23
+torch>=2.0
+matplotlib>=3.6
+scikit-learn>=1.2     # toy datasets + metrics for comparison
+jupyterlab>=4.0       # to run the .ipynb notebooks
+# Optional: torchvision>=0.15  # for image-based generative-models / CNN demos
