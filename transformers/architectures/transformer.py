@@ -190,6 +190,9 @@ def make_reverse_data(n, L, vocab, seed=SEED):
 
 def demo():
     torch.manual_seed(SEED); np.random.seed(SEED)
+    # On many-core CPUs, default multi-threading thrashes on these tiny ops;
+    # pinning to 1 thread makes the demo ~10x faster and avoids timeouts.
+    torch.set_num_threads(1)
     dev = get_device()
     V, L = 14, 6
     src, tin, tout = make_reverse_data(2000, L, V)
@@ -202,14 +205,14 @@ def demo():
     loss_fn = nn.CrossEntropyLoss(ignore_index=0)
 
     model.train()
-    for step in range(1, 1001):
+    for step in range(1, 601):
         for g in opt.param_groups:               # noam schedule (warmup + decay)
-            g["lr"] = noam_lr(step, 64, warmup=300)
+            g["lr"] = noam_lr(step, 64, warmup=200)
         tmask = causal_mask(tin.size(1), dev)
         logits = model(src, tin, tgt_mask=tmask)
         loss = loss_fn(logits.reshape(-1, V), tout.reshape(-1))
         opt.zero_grad(); loss.backward(); opt.step()
-        if step % 250 == 0:
+        if step % 150 == 0:
             print(f"step {step:4d}  loss {loss.item():.3f}  lr {opt.param_groups[0]['lr']:.4f}")
 
     # greedy decode one example
