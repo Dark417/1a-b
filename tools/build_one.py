@@ -17,7 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from tools.nbreg import BUILDERS, write_notebook  # noqa: E402
+from tools.nbreg import BUILDERS, write_notebook, finalize  # noqa: E402
 
 
 def main(spec_path: str):
@@ -30,7 +30,7 @@ def main(spec_path: str):
     for name, (path, fn) in BUILDERS.items():
         out = ROOT / path
         out.parent.mkdir(parents=True, exist_ok=True)
-        write_notebook(str(out), fn())
+        write_notebook(str(out), finalize(fn()))
 
 
 if __name__ == "__main__":

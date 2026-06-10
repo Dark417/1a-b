@@ -18,7 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from tools.nbreg import BUILDERS, write_notebook  # noqa: E402
+from tools.nbreg import BUILDERS, write_notebook, finalize  # noqa: E402
 import tools.specs  # noqa: E402,F401  (populates BUILDERS)
 
 
@@ -30,7 +30,7 @@ def main(argv):
             continue
         out = ROOT / path
         out.parent.mkdir(parents=True, exist_ok=True)
-        write_notebook(str(out), fn())
+        write_notebook(str(out), finalize(fn()))
         built += 1
     print(f"\n{built} notebook(s) built.")
 

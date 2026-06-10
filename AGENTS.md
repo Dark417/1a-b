@@ -147,12 +147,18 @@ hand-edited, so the code never diverges from the module:
 - Author the concept/math markdown + plot/training cells in
   `tools/specs/<name>.py` (one `build()` returning a list of cells), and register
   it with `@register(name, "path/to/<name>.ipynb")`.
-- Code cells that display the implementation use the `show(module, "ClassName")`
-  helper, which prints the **real source** via `inspect.getsource` — so the
-  notebook always reflects the current `.py`.
-- Run `python tools/build_notebooks.py [name]` to (re)generate. The notebook is
-  written next to its module so `import <module>` resolves the sibling `.py`.
-- See `common/nbgen.py` (JSON writer) and `tools/nbreg.py` (registry + helpers).
+- Code cells that present the implementation use the `show(module, "ClassName")`
+  helper. At build time this **copies the real source code** out of the `.py`
+  (via `ast`) and embeds it as an actual, runnable code cell — so the notebook
+  *contains* the same code, not a reflection of it. The first `show(...)` for a
+  module also carries that module's preamble (imports, constants, module-level
+  helpers, `demo()`), so the notebook runs top-to-bottom on its own.
+- `run_demo(module)` emits a `demo()` call (defined by the embedded preamble).
+- Run `python tools/build_notebooks.py [name]` (or
+  `python tools/build_one.py tools/specs/<name>.py`) to (re)generate. Both call
+  `finalize()` which resolves the `show` markers into the embedded code.
+- See `common/nbgen.py` (JSON writer) and `tools/nbreg.py` (registry, `show`,
+  `finalize`, source extraction).
 
 ---
 
