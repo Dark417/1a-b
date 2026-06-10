@@ -194,7 +194,7 @@ def demo():
     np.random.seed(SEED)
     dev = get_device()
 
-    V, L, n = 24, 8, 1024
+    V, L, n = 24, 8, 384
     seqs = make_sequences(n, L, V)                             # (n, L+2)
     corrupt, labels = mlm_mask_numpy(seqs, V, p=0.20)          # mask ~20% to learn fast
     seg = np.zeros_like(seqs)                                  # single segment here
@@ -205,17 +205,17 @@ def demo():
     S = torch.tensor(seg, device=dev)
     M = torch.tensor(pad_mask, device=dev)
 
-    model = BERT(V, d_model=64, n_heads=4, d_ff=128, n_layers=2,
+    model = BERT(V, d_model=48, n_heads=4, d_ff=96, n_layers=2,
                  max_len=L + 2).to(dev)
     opt = torch.optim.AdamW(model.parameters(), lr=3e-3)
     lossfn = nn.CrossEntropyLoss(ignore_index=-100)
 
     model.train()
-    for step in range(1, 301):
+    for step in range(1, 251):
         mlm_logits, _ = model(X, S, M)
         loss = lossfn(mlm_logits.reshape(-1, V), Y.reshape(-1))
         opt.zero_grad(); loss.backward(); opt.step()
-        if step % 75 == 0:
+        if step % 50 == 0:
             # accuracy on the masked positions
             with torch.no_grad():
                 pred = mlm_logits.argmax(-1)

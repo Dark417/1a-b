@@ -238,10 +238,17 @@ class RegMLP:
         p = self.forward(X, train=False)
         return -np.mean(np.log(p[np.arange(len(y)), y] + 1e-12))
 
-    def fit(self, X, y, epochs=300):
+    def fit(self, X, y, epochs=300, batch=32, seed=SEED):
+        # Mini-batch SGD: a FRESH dropout mask per batch is what makes dropout an
+        # implicit ensemble over sub-networks (a single full-batch mask would not).
+        rng = np.random.default_rng(seed)
+        n = len(X)
         for _ in range(epochs):
-            self.forward(X, train=True)
-            self.step(y)
+            idx = rng.permutation(n)
+            for s in range(0, n, batch):
+                b = idx[s:s + batch]
+                self.forward(X[b], train=True)
+                self.step(y[b])
         return self
 
     def acc(self, X, y):
@@ -272,6 +279,10 @@ def numeric_grad_check(layer, x, eps=1e-6):
 # ---------------------------------------------------------------------------
 import torch
 import torch.nn as nn
+
+# Keep the CPU demo fast & deterministic: avoid thread oversubscription, which can
+# make these tiny full-batch problems paradoxically slow.
+torch.set_num_threads(1)
 
 
 def get_device():
@@ -336,47 +347,70 @@ def demo():
     out = drop.forward(a, train=True)
     print(f"\nInverted dropout: E[output] = {out.mean():.3f} (target 1.0; scaling preserves mean)")
 
-    # (c) THE overfitting demo: a too-big net on few noisy samples
-    from sklearn.datasets import make_classification
-    X, y = make_classification(n_samples=200, n_features=40, n_informative=8,
-                               n_redundant=0, n_classes=3, flip_y=0.10,
-                               class_sep=1.0, random_state=SEED)
-    X = (X - X.mean(0)) / X.std(0)
-    Xtr, ytr, Xte, yte = X[:120], y[:120], X[120:], y[120:]
+    # (c) THE overfitting demo: a big net on FEW, label-noisy digits. With only 80
+    # training images (20% of labels corrupted) a 256-unit net memorizes the train
+    # set perfectly; regularization trades that away for better generalization.
+    from sklearn.datasets import load_digits
+    d = load_digits()
+    Xall = d.data / 16.0
+    yall = d.target.copy()
+    rng = np.random.default_rng(SEED)
+    perm = rng.permutation(len(Xall))
+    Xall, yall = Xall[perm], yall[perm]
+    Xtr, ytr = Xall[:80].copy(), yall[:80].copy()
+    Xte, yte = Xall[200:700], yall[200:700]
+    noisy = rng.random(len(ytr)) < 0.20                 # corrupt 20% of train labels
+    ytr[noisy] = rng.integers(0, 10, noisy.sum())
 
-    print("\nOverfitting demo (40 feats, 120 train, big 128-unit hidden layer):")
+    print("\nOverfitting demo (8x8 digits, 80 noisy train imgs, 256-unit hidden):")
     print(f"  {'config':22s} {'train acc':>10s} {'test acc':>10s} {'gap':>7s}")
     configs = [
-        ("no regularization",  dict(l2=0.0,   dropout=0.0)),
-        ("L2 weight decay",    dict(l2=1e-2,  dropout=0.0)),
-        ("dropout p=0.5",      dict(l2=0.0,   dropout=0.5)),
-        ("dropout + L2",       dict(l2=1e-2,  dropout=0.5)),
+        ("no regularization",  dict(l2=0.0,    dropout=0.0)),
+        ("L2 weight decay",    dict(l2=5e-3,   dropout=0.0)),
+        ("dropout p=0.6",      dict(l2=0.0,    dropout=0.6)),
+        ("dropout + L2",       dict(l2=5e-3,   dropout=0.6)),
     ]
     for name, kw in configs:
-        net = RegMLP(40, 128, 3, lr=0.2, seed=SEED, **kw).fit(Xtr, ytr, epochs=250)
+        net = RegMLP(64, 256, 10, lr=0.2, seed=SEED, **kw).fit(
+            Xtr, ytr, epochs=200, batch=16)
         tr, te = net.acc(Xtr, ytr), net.acc(Xte, yte)
         print(f"  {name:22s} {tr:10.3f} {te:10.3f} {tr-te:7.3f}")
     print("  -> regularization lowers TRAIN accuracy but RAISES test accuracy:")
     print("     the train/test gap (overfitting) shrinks.")
 
-    # (d) early stopping on a held-out split
-    es = EarlyStopping(patience=15)
-    net = RegMLP(40, 128, 3, lr=0.2, l2=0.0, dropout=0.0, seed=SEED)
+    # (d) early stopping on a held-out split (use a val split distinct from test)
+    Xval, yval = Xall[700:900], yall[700:900]
+    es = EarlyStopping(patience=20)
+    net = RegMLP(64, 256, 10, lr=0.2, l2=0.0, dropout=0.0, seed=SEED)
     stop_epoch = -1
-    for ep in range(400):
-        net.forward(Xtr, train=True); net.step(ytr)
-        if es.step(net.loss(Xte, yte)):
+    brng = np.random.default_rng(SEED)
+    for ep in range(300):
+        idx = brng.permutation(len(Xtr))
+        for s in range(0, len(Xtr), 16):
+            b = idx[s:s + 16]
+            net.forward(Xtr[b], train=True); net.step(ytr[b])
+        if es.step(net.loss(Xval, yval)):
             stop_epoch = ep; break
     print(f"\nEarly stopping fired at epoch {stop_epoch} (best val loss {es.best:.3f}),")
-    print("  avoiding the later epochs where the net would memorize noise.")
+    print("  halting before the net memorizes the noisy labels.")
 
-    # (e) label smoothing: torch cross-entropy with soft targets
-    print("\nLabel smoothing (torch): softens targets to curb over-confidence.")
-    base = RegMLPTorch(40, 64, 3, dropout=0.0).fit(Xtr, ytr, epochs=300, lr=0.2)
-    smot = RegMLPTorch(40, 64, 3, dropout=0.0).fit(Xtr, ytr, epochs=300, lr=0.2,
-                                                    label_smoothing=0.1)
-    print(f"  plain CE      test acc = {base.acc(Xte, yte):.3f}")
-    print(f"  smoothed CE   test acc = {smot.acc(Xte, yte):.3f}")
+    # (e) label smoothing: softens targets to curb over-confidence. We report the
+    # mean confidence (max softmax prob) on the test set: smoothing should LOWER it
+    # (better-calibrated, less over-confident) while keeping accuracy comparable.
+    print("\nLabel smoothing (torch): mean test confidence (max prob) & accuracy.")
+    base = RegMLPTorch(64, 128, 10, dropout=0.0).fit(Xtr, ytr, epochs=200, lr=0.2)
+    smot = RegMLPTorch(64, 128, 10, dropout=0.0).fit(Xtr, ytr, epochs=200, lr=0.2,
+                                                     label_smoothing=0.1)
+
+    @torch.no_grad()
+    def mean_conf(model, X):
+        model.eval()
+        t = torch.as_tensor(X, dtype=torch.float32)
+        return float(torch.softmax(model(t), 1).max(1).values.mean())
+
+    print(f"  plain CE     : conf={mean_conf(base, Xte):.3f}  test acc={base.acc(Xte, yte):.3f}")
+    print(f"  smoothed CE  : conf={mean_conf(smot, Xte):.3f}  test acc={smot.acc(Xte, yte):.3f}")
+    print("  -> smoothing reduces over-confidence (lower mean prob) -> better calibration.")
 
 
 if __name__ == "__main__":

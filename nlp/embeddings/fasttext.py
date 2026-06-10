@@ -99,6 +99,9 @@ class FastTextNumPy:
         self.counts = np.array([counts[w] for w in self.itos], float)
         p = self.counts ** 0.75
         self.noise = p / p.sum()
+        # precompute a sampling table so drawing negatives is O(1), not O(|V|)
+        rng0 = np.random.default_rng(self.seed)
+        self._neg_table = rng0.choice(len(self.itos), size=100000, p=self.noise)
         V = len(self.itos)
         rng = np.random.default_rng(self.seed)
         # Z: subword (input) table; U: per-word context (output) table
@@ -134,7 +137,7 @@ class FastTextNumPy:
                 sub = self._cache[center]                 # subword ids of center
                 v = self.Z[sub].sum(0)                    # v_w = Σ z_g
                 o = self.stoi[ctx]
-                negs = rng.choice(len(self.itos), self.neg, p=self.noise)
+                negs = self._neg_table[rng.integers(0, len(self._neg_table), self.neg)]
                 targets = np.concatenate([[o], negs])
                 labels = np.concatenate([[1.0], np.zeros(self.neg)])
                 scores = _sigmoid(self.U[targets] @ v)
@@ -209,9 +212,10 @@ def train_fasttext_torch(ft_np, sentences, dim=50, neg=5, epochs=40, lr=0.01):
     sub_ids = torch.tensor(flat, device=dev)
     offsets = torch.tensor(offsets, device=dev)
     pos = torch.tensor(pos, device=dev)
+    table = ft_np._neg_table
     for _ in range(epochs):
-        negs = torch.tensor(rng.choice(len(ft_np.itos), (len(pairs), neg),
-                                       p=ft_np.noise), device=dev)
+        negs = torch.tensor(table[rng.integers(0, len(table), (len(pairs), neg))],
+                            device=dev)
         opt.zero_grad(); loss = model(sub_ids, offsets, pos, negs)
         loss.backward(); opt.step()
     return model
@@ -239,7 +243,7 @@ def toy_corpus():
 def demo():
     np.random.seed(SEED); torch.manual_seed(SEED)
     sents = toy_corpus()
-    ft = FastTextNumPy(dim=30, window=2, neg=5, minn=3, maxn=5).fit(sents, epochs=60)
+    ft = FastTextNumPy(dim=30, window=2, neg=5, minn=3, maxn=5).fit(sents, epochs=40)
 
     print("Subword n-grams of 'playing':")
     print("  ", char_ngrams("playing", 3, 5))

@@ -194,7 +194,7 @@ def demo():
     dev = get_device()
 
     size, patch = 8, 4
-    X_np, y_np = make_toy_images(900, size)
+    X_np, y_np = make_toy_images(512, size)
     X = torch.tensor(X_np, device=dev)
     y = torch.tensor(y_np, device=dev)
 
@@ -204,12 +204,12 @@ def demo():
           f"({(size//patch)**2} patches of dim {1*patch*patch})")
 
     model = VisionTransformer(in_ch=1, img_size=size, patch=patch, n_classes=3,
-                              d_model=64, n_heads=4, d_ff=128, n_layers=2).to(dev)
+                              d_model=48, n_heads=4, d_ff=96, n_layers=2).to(dev)
     opt = torch.optim.AdamW(model.parameters(), lr=3e-3)
     lossfn = nn.CrossEntropyLoss()
 
     model.train()
-    for step in range(1, 251):
+    for step in range(1, 201):
         logits = model(X)
         loss = lossfn(logits, y)
         opt.zero_grad(); loss.backward(); opt.step()

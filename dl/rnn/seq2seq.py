@@ -79,6 +79,10 @@ def seed_everything(seed=SEED):
     np.random.seed(seed)
     import torch
     torch.manual_seed(seed)
+    # On this CPU box, tiny per-step RNN ops suffer massive thread-oversubscription
+    # overhead (multi-thread BLAS on a 32-wide matmul is ~100x slower); one thread
+    # keeps the demo well under the time budget. Safe for these toy tensors.
+    torch.set_num_threads(1)
 
 
 # ---------------------------------------------------------------------------

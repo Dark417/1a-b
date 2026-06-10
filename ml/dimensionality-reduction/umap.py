@@ -147,32 +147,35 @@ class UMAPNumPy:
 
         a, b = self.a, self.b
         n_edges = len(ii)
+        # The per-edge / per-negative-sample loop is the textbook description,
+        # but pure-Python loops are slow; we apply the *same* forces vectorized
+        # per epoch (one batch of attractions over all edges, one batch of
+        # repulsions over sampled non-edges) using scatter-add.
         for epoch in range(self.n_epochs):
             alpha = self.lr * (1.0 - epoch / self.n_epochs)   # LR decay
-            # process edges in random order
-            order = rng.permutation(n_edges)
-            for e in order:
-                i, j = ii[e], jj[e]
-                # --- attractive force on the connected edge (i, j) ---
-                diff = Y[i] - Y[j]
-                d2 = (diff ** 2).sum() + 1e-12
-                # d/dd2 of cross-entropy attractive term:
-                #   grad_coef = -2 a b d2^{b-1} / (1 + a d2^b)
-                grad_coef = (-2.0 * a * b * d2 ** (b - 1.0)) / (1.0 + a * d2 ** b)
-                grad = np.clip(grad_coef * diff, -4, 4) * wij[e]
-                Y[i] += alpha * grad
-                Y[j] -= alpha * grad
-                # --- repulsive forces against negative samples ---
-                for _ in range(self.n_negative):
-                    kk = rng.integers(n)
-                    if kk == i:
-                        continue
-                    diff = Y[i] - Y[kk]
-                    d2 = (diff ** 2).sum() + 1e-12
-                    # repulsive gradient coefficient
-                    grad_coef = (2.0 * b) / ((1e-3 + d2) * (1.0 + a * d2 ** b))
-                    grad = np.clip(grad_coef * diff, -4, 4)
-                    Y[i] += alpha * grad
+
+            # --- attractive forces on all graph edges at once ---
+            diff = Y[ii] - Y[jj]                       # (n_edges, dim)
+            d2 = (diff ** 2).sum(1) + 1e-12
+            # d/dd2 of the attractive cross-entropy term:
+            #   coef = -2 a b d2^{b-1} / (1 + a d2^b)
+            coef = (-2.0 * a * b * d2 ** (b - 1.0)) / (1.0 + a * d2 ** b)
+            grad = np.clip(coef[:, None] * diff, -4, 4) * wij[:, None]
+            upd = alpha * grad
+            np.add.at(Y, ii, upd)                      # endpoint i moves +grad
+            np.add.at(Y, jj, -upd)                     # endpoint j moves -grad
+
+            # --- repulsive forces against negative samples ---
+            src = np.repeat(ii, self.n_negative)       # each edge tail repeated
+            neg = rng.integers(0, n, size=len(src))    # random non-neighbors
+            valid = neg != src
+            src, neg = src[valid], neg[valid]
+            diff = Y[src] - Y[neg]
+            d2 = (diff ** 2).sum(1) + 1e-12
+            # repulsive gradient coefficient
+            coef = (2.0 * b) / ((1e-3 + d2) * (1.0 + a * d2 ** b))
+            grad = np.clip(coef[:, None] * diff, -4, 4)
+            np.add.at(Y, src, alpha * grad)
         self.embedding_ = Y
         self.graph_ = W
         return Y
@@ -219,7 +222,9 @@ def umap_torch(X, n_components=2, n_neighbors=15, min_dist=0.1, spread=1.0,
     opt = torch.optim.Adam([Y], lr=lr)
 
     for _ in range(n_iter):
-        d2 = torch.cdist(Y, Y) ** 2
+        # algebraic squared distances (faster than cdist under autograd on CPU)
+        sq = (Y ** 2).sum(1)
+        d2 = (sq[:, None] - 2.0 * (Y @ Y.T) + sq[None, :]).clamp_min(0.0)
         q = 1.0 / (1.0 + a * d2.clamp_min(1e-9) ** b)
         q = q.masked_fill(eye, 0.0).clamp(1e-6, 1 - 1e-6)
         ce = -(Wt * q.log() + (1.0 - Wt) * (1.0 - q).log())
@@ -259,9 +264,11 @@ def demo():
     inter = np.mean([np.linalg.norm(cen[p] - cen[q]) for p, q in combinations(range(len(cen)), 2)])
     print(f"map intra={intra:.2f} inter={inter:.2f} ratio={inter/(intra+1e-9):.2f}")
 
-    Yt = umap_torch(X, n_neighbors=15, n_iter=200)
-    twt = trustworthiness(X, Yt, n_neighbors=5)
-    print(f"Torch UMAP trustworthiness={twt:.3f}")
+    # Torch path uses autograd (heavier per step on CPU) -> smaller subset.
+    Xs = X[:150]
+    Yt = umap_torch(Xs, n_neighbors=15, n_iter=200)
+    twt = trustworthiness(Xs, Yt, n_neighbors=5)
+    print(f"Torch UMAP (n=150) trustworthiness={twt:.3f}")
 
 
 if __name__ == "__main__":

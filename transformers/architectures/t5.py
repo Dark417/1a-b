@@ -252,12 +252,12 @@ def demo():
 
     # Then: train the seq2seq model on the text-to-text REVERSE task.
     V, L = 20, 6
-    src, tin, tout = make_reverse_data(2000, L, V)
+    src, tin, tout = make_reverse_data(512, L, V)
     src = torch.tensor(src, device=dev)
     tin = torch.tensor(tin, device=dev)
     tout = torch.tensor(tout, device=dev)
 
-    model = T5(V, d_model=64, n_heads=4, d_ff=128, n_layers=2,
+    model = T5(V, d_model=48, n_heads=4, d_ff=96, n_layers=2,
                max_len=L + 2).to(dev)
     opt = torch.optim.AdamW(model.parameters(), lr=3e-3)
     lossfn = nn.CrossEntropyLoss(ignore_index=PAD)
@@ -265,11 +265,11 @@ def demo():
     model.train()
     tmask = causal_mask(tin.size(1), dev)
     print("\ntext-to-text REVERSE task:")
-    for step in range(1, 401):
+    for step in range(1, 301):
         logits = model(src, tin, tgt_mask=tmask)
         loss = lossfn(logits.reshape(-1, V), tout.reshape(-1))
         opt.zero_grad(); loss.backward(); opt.step()
-        if step % 100 == 0:
+        if step % 75 == 0:
             print(f"  step {step:4d}  loss {loss.item():.4f}")
 
     # greedy decode one example

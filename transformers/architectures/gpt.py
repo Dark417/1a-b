@@ -178,19 +178,19 @@ def demo():
     dev = get_device()
 
     period, V, L = 5, 5, 12        # vocab == period (the cyclic alphabet)
-    data = torch.tensor(make_pattern_data(1024, L + 1, period), device=dev)
+    data = torch.tensor(make_pattern_data(256, L + 1, period), device=dev)
     x, y = data[:, :-1], data[:, 1:]                             # next-token targets
 
-    model = GPT(V, d_model=64, n_heads=4, d_ff=128, n_layers=2, max_len=L).to(dev)
+    model = GPT(V, d_model=48, n_heads=4, d_ff=96, n_layers=2, max_len=L).to(dev)
     opt = torch.optim.AdamW(model.parameters(), lr=3e-3)
     lossfn = nn.CrossEntropyLoss()
 
     model.train()
-    for step in range(1, 301):
+    for step in range(1, 251):
         logits = model(x)
         loss = lossfn(logits.reshape(-1, V), y.reshape(-1))
         opt.zero_grad(); loss.backward(); opt.step()
-        if step % 75 == 0:
+        if step % 50 == 0:
             print(f"step {step:4d}  loss {loss.item():.4f}")
 
     # greedy/temperature generation: start from a single token, continue the cycle

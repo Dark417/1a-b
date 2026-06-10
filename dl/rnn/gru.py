@@ -242,6 +242,10 @@ def make_memory_task(n=300, T=25, seed=SEED):
 def seed_everything(seed=SEED):
     np.random.seed(seed)
     torch.manual_seed(seed)
+    # On this CPU box, small RNN ops suffer heavy thread-oversubscription overhead
+    # (multi-thread BLAS on tiny matmuls is far slower); one thread keeps the demo
+    # well under the time budget. Harmless for these toy-sized tensors.
+    torch.set_num_threads(1)
 
 
 def demo():
