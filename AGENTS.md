@@ -138,9 +138,21 @@ Standard cell order:
 **Rules for notebooks**
 - Math uses LaTeX: `$...$` inline, `$$...$$` block.
 - Every notebook must run top-to-bottom without error on CPU.
-- Keep cell outputs out of version control where practical (clear before
-  commit), or keep them small.
-- The notebook and the `.py` should not drift: the code cells are the same code.
+- Keep cell outputs out of version control (the builder writes empty outputs;
+  validate with `nbconvert --execute` to a throwaway path, don't commit outputs).
+- The notebook and the `.py` should not drift.
+
+**How notebooks are generated (no drift).** Notebooks are *built* from a spec, not
+hand-edited, so the code never diverges from the module:
+- Author the concept/math markdown + plot/training cells in
+  `tools/specs/<name>.py` (one `build()` returning a list of cells), and register
+  it with `@register(name, "path/to/<name>.ipynb")`.
+- Code cells that display the implementation use the `show(module, "ClassName")`
+  helper, which prints the **real source** via `inspect.getsource` — so the
+  notebook always reflects the current `.py`.
+- Run `python tools/build_notebooks.py [name]` to (re)generate. The notebook is
+  written next to its module so `import <module>` resolves the sibling `.py`.
+- See `common/nbgen.py` (JSON writer) and `tools/nbreg.py` (registry + helpers).
 
 ---
 
@@ -195,8 +207,9 @@ files.
 2. [ ] Copy `common/template.py` → `category/sub/name.py`; implement NumPy +
        PyTorch + demo + variants.
 3. [ ] Verify it runs: `python category/sub/name.py`.
-4. [ ] Create `name.ipynb` with the 7-section structure (§3); ensure it runs
-       top-to-bottom.
+4. [ ] Add `tools/specs/name.py` (concept + math + cells) and run
+       `python tools/build_notebooks.py name`; ensure the `.ipynb` runs
+       top-to-bottom (`nbconvert --execute`).
 5. [ ] Demonstrate the relevant training technique(s) explicitly.
 6. [ ] Update the category `README.md` index and set `MAP.md` status to `[x]`.
 7. [ ] Commit with a clear message: `add <category>/<name> (numpy+torch+nb)`.
