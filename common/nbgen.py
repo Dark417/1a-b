@@ -34,15 +34,18 @@ def _lines(text: str) -> list[str]:
 
 def write_notebook(path: str, cells: list[tuple[str, str]]) -> None:
     nb_cells = []
-    for kind, text in cells:
+    for i, (kind, text) in enumerate(cells):
+        cell_id = f"c{i:03d}"  # stable cell id (nbformat 4.5+ requires one)
         if kind == "md":
             nb_cells.append({
+                "id": cell_id,
                 "cell_type": "markdown",
                 "metadata": {},
                 "source": _lines(text),
             })
         else:
             nb_cells.append({
+                "id": cell_id,
                 "cell_type": "code",
                 "metadata": {},
                 "execution_count": None,

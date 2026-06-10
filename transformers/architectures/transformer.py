@@ -195,7 +195,7 @@ def demo():
     torch.set_num_threads(1)
     dev = get_device()
     V, L = 14, 6
-    src, tin, tout = make_reverse_data(2000, L, V)
+    src, tin, tout = make_reverse_data(256, L, V)   # tiny: trivial task, CPU-fast
     src = torch.tensor(src, device=dev)
     tin = torch.tensor(tin, device=dev)
     tout = torch.tensor(tout, device=dev)
@@ -205,7 +205,7 @@ def demo():
     loss_fn = nn.CrossEntropyLoss(ignore_index=0)
 
     model.train()
-    for step in range(1, 601):
+    for step in range(1, 501):
         for g in opt.param_groups:               # noam schedule (warmup + decay)
             g["lr"] = noam_lr(step, 64, warmup=200)
         tmask = causal_mask(tin.size(1), dev)
