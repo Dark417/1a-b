@@ -344,7 +344,7 @@ def demo():
     X = (X - X.mean(0)) / X.std(0)
     Xtr, ytr, Xte, yte = X[:120], y[:120], X[120:], y[120:]
 
-    print("\nOverfitting demo (40 feats, 120 train, big 256-unit hidden layer):")
+    print("\nOverfitting demo (40 feats, 120 train, big 128-unit hidden layer):")
     print(f"  {'config':22s} {'train acc':>10s} {'test acc':>10s} {'gap':>7s}")
     configs = [
         ("no regularization",  dict(l2=0.0,   dropout=0.0)),
@@ -353,7 +353,7 @@ def demo():
         ("dropout + L2",       dict(l2=1e-2,  dropout=0.5)),
     ]
     for name, kw in configs:
-        net = RegMLP(40, 256, 3, lr=0.2, seed=SEED, **kw).fit(Xtr, ytr, epochs=400)
+        net = RegMLP(40, 128, 3, lr=0.2, seed=SEED, **kw).fit(Xtr, ytr, epochs=250)
         tr, te = net.acc(Xtr, ytr), net.acc(Xte, yte)
         print(f"  {name:22s} {tr:10.3f} {te:10.3f} {tr-te:7.3f}")
     print("  -> regularization lowers TRAIN accuracy but RAISES test accuracy:")
@@ -361,7 +361,7 @@ def demo():
 
     # (d) early stopping on a held-out split
     es = EarlyStopping(patience=15)
-    net = RegMLP(40, 256, 3, lr=0.2, l2=0.0, dropout=0.0, seed=SEED)
+    net = RegMLP(40, 128, 3, lr=0.2, l2=0.0, dropout=0.0, seed=SEED)
     stop_epoch = -1
     for ep in range(400):
         net.forward(Xtr, train=True); net.step(ytr)

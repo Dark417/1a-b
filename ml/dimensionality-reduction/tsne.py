@@ -209,7 +209,9 @@ def demo():
     tw = trustworthiness(X, Y, n_neighbors=5)
     print(f"NumPy t-SNE  KL={ts.kl_divergence_:.3f}  trustworthiness={tw:.3f}")
 
-    Yt = tsne_torch(X, perplexity=30, n_iter=300)
+    # Fewer iterations for the torch path: per-step autograd is heavier on CPU,
+    # so keep it short to stay well under the demo time budget.
+    Yt = tsne_torch(X, perplexity=30, n_iter=120, exaggerate_iter=40)
     twt = trustworthiness(X, Yt, n_neighbors=5)
     print(f"Torch t-SNE  trustworthiness={twt:.3f}")
 

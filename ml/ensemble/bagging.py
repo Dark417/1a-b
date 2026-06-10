@@ -96,22 +96,44 @@ class _Tree:
             v, c = np.unique(y, return_counts=True); return v[c.argmax()]
         return float(y.mean())
 
+    def _best_split(self, X, y):
+        # Vectorized prefix-sum split search (O(n log n) per feature).
+        n, d = X.shape
+        best = (np.inf, None, None)
+        for f in range(d):
+            order = np.argsort(X[:, f], kind="mergesort")
+            xs = X[order, f]
+            valid = xs[:-1] != xs[1:]
+            if not valid.any():
+                continue
+            cnt_l = np.arange(1, n); cnt_r = n - cnt_l
+            if self.task == "classification":
+                C = self.n_classes
+                oh = np.eye(C)[y[order].astype(int)]
+                cum = np.cumsum(oh, axis=0); tot = cum[-1]
+                cl = cum[:-1]; cr = tot - cl
+                gl = 1 - ((cl / cnt_l[:, None]) ** 2).sum(1)
+                gr = 1 - ((cr / cnt_r[:, None]) ** 2).sum(1)
+                s = (cnt_l * gl + cnt_r * gr) / n
+            else:
+                ys = y[order].astype(float)
+                cs = np.cumsum(ys)[:-1]; cs2 = np.cumsum(ys ** 2)[:-1]
+                tot, tot2 = cs[-1] + ys[-1], cs2[-1] + ys[-1] ** 2
+                vl = cs2 / cnt_l - (cs / cnt_l) ** 2
+                vr = (tot2 - cs2) / cnt_r - ((tot - cs) / cnt_r) ** 2
+                s = (cnt_l * vl + cnt_r * vr) / n
+            s = np.where(valid, s, np.inf)
+            j = int(np.argmin(s))
+            if s[j] < best[0]:
+                best = (s[j], f, (xs[j] + xs[j + 1]) / 2)
+        return best
+
     def _build(self, X, y, depth):
         if (len(y) < self.min_samples_split or
                 (self.max_depth is not None and depth >= self.max_depth) or
                 len(np.unique(y)) == 1):
             return ("leaf", self._leaf(y))
-        best = (np.inf, None, None)
-        for f in range(X.shape[1]):
-            vals = np.unique(X[:, f])
-            for t in (vals[:-1] + vals[1:]) / 2 if len(vals) > 1 else []:
-                m = X[:, f] <= t
-                if m.sum() == 0 or (~m).sum() == 0:
-                    continue
-                s = (self._imp(y[m]) * m.sum() + self._imp(y[~m]) * (~m).sum()) / len(y)
-                if s < best[0]:
-                    best = (s, f, t)
-        _, f, t = best
+        _, f, t = self._best_split(X, y)
         if f is None:
             return ("leaf", self._leaf(y))
         m = X[:, f] <= t
@@ -119,7 +141,10 @@ class _Tree:
                 self._build(X[~m], y[~m], depth + 1))
 
     def fit(self, X, y):
-        self.root = self._build(np.asarray(X, float), np.asarray(y), 0)
+        X, y = np.asarray(X, float), np.asarray(y)
+        if self.task == "classification":
+            self.n_classes = int(y.max()) + 1
+        self.root = self._build(X, y, 0)
         return self
 
     def _one(self, x, node):
@@ -230,17 +255,17 @@ def sklearn_reference(X, y, task="classification", **kw):
 # Variance-reduction experiment: estimate Var of a single tree vs a bagged
 # ensemble across independent training sets drawn from the same generator.
 # ---------------------------------------------------------------------------
-def variance_experiment(n_trials=20, n_train=200, seed=SEED):
+def variance_experiment(n_trials=20, n_train=150, seed=SEED):
     from sklearn.datasets import make_friedman1
     rng = np.random.default_rng(seed)
-    Xte, _ = make_friedman1(n_samples=100, noise=0.0, random_state=999)
+    Xte, _ = make_friedman1(n_samples=60, noise=0.0, random_state=999)
     single_preds, bag_preds = [], []
     for t in range(n_trials):
         Xtr, ytr = make_friedman1(n_samples=n_train, noise=1.0,
                                   random_state=int(rng.integers(1 << 30)))
         single = _Tree(task="regression", max_depth=None).fit(Xtr, ytr)
         single_preds.append(single.predict(Xte))
-        bag = BaggingNumPy(lambda: _Tree(task="regression"), n_estimators=25,
+        bag = BaggingNumPy(lambda: _Tree(task="regression"), n_estimators=20,
                            task="regression", seed=t).fit(Xtr, ytr)
         bag_preds.append(bag.predict(Xte))
     # variance of the prediction at each test point, averaged over points
@@ -281,7 +306,7 @@ def demo():
           f"OOB MSE={bagr.oob_score_:.3f}")
 
     # ---------- variance reduction made explicit ----------
-    vs, vb = variance_experiment(n_trials=12)
+    vs, vb = variance_experiment(n_trials=8)
     print(f"[var] mean prediction variance: single tree={vs:.3f}  bagged={vb:.3f}  "
           f"(ratio {vb / vs:.2f}x)")
 

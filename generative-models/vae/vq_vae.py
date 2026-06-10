@@ -189,6 +189,7 @@ class VQVAE(nn.Module):
 # ---------------------------------------------------------------------------
 def demo():
     np.random.seed(SEED); torch.manual_seed(SEED)
+    torch.set_num_threads(1)  # tiny model: 1 thread avoids CPU thrashing
     from sklearn.datasets import load_digits
     X = (load_digits().data / 16.0).astype(np.float32)            # (1797, 64) in [0,1]
 

@@ -256,6 +256,9 @@ class SVMTorch(nn.Module):
 # ---------------------------------------------------------------------------
 def demo():
     np.random.seed(SEED); torch.manual_seed(SEED)
+    # Tiny problems: a single BLAS thread avoids CPU thread-oversubscription
+    # overhead that otherwise dominates these many small matmuls.
+    torch.set_num_threads(1)
     from sklearn.datasets import make_moons, make_blobs
 
     # --- linearly separable-ish: blobs ---
