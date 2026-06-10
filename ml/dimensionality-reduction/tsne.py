@@ -175,7 +175,10 @@ def tsne_torch(X, n_components=2, perplexity=30.0, n_iter=500, lr=200.0,
         for grp in opt.param_groups:
             grp["momentum"] = 0.5 if it < 250 else 0.8
         P_eff = Pt * early_exaggeration if it < exaggerate_iter else Pt
-        d2 = torch.cdist(Y, Y) ** 2
+        # squared pairwise distances via ||a-b||^2 = |a|^2 - 2 a.b + |b|^2
+        # (much faster than torch.cdist under autograd on CPU)
+        sq = (Y ** 2).sum(1)
+        d2 = (sq[:, None] - 2.0 * (Y @ Y.T) + sq[None, :]).clamp_min(0.0)
         num = 1.0 / (1.0 + d2)
         num = num.masked_fill(eye, 0.0)
         Q = (num / (num.sum() + 1e-12)).clamp_min(1e-12)
@@ -209,11 +212,13 @@ def demo():
     tw = trustworthiness(X, Y, n_neighbors=5)
     print(f"NumPy t-SNE  KL={ts.kl_divergence_:.3f}  trustworthiness={tw:.3f}")
 
-    # Fewer iterations for the torch path: per-step autograd is heavier on CPU,
-    # so keep it short to stay well under the demo time budget.
-    Yt = tsne_torch(X, perplexity=30, n_iter=120, exaggerate_iter=40)
-    twt = trustworthiness(X, Yt, n_neighbors=5)
-    print(f"Torch t-SNE  trustworthiness={twt:.3f}")
+    # The torch path optimizes via autograd, which is heavier per step on CPU.
+    # Run it on a smaller subset with fewer iterations to stay in budget; it
+    # demonstrates the identical objective, just at smaller scale.
+    Xs, ys = X[:150], y[:150]
+    Yt = tsne_torch(Xs, perplexity=30, n_iter=250, exaggerate_iter=60)
+    twt = trustworthiness(Xs, Yt, n_neighbors=5)
+    print(f"Torch t-SNE (n=150)  trustworthiness={twt:.3f}")
 
     # A good embedding keeps same-digit points close: compare mean intra- vs
     # inter-class distances in the map.

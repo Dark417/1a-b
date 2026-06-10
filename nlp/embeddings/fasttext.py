@@ -155,7 +155,7 @@ class FastTextNumPy:
         M = M / (np.linalg.norm(M, axis=1, keepdims=True) + 1e-9)
         sim = M @ q
         order = np.argsort(-sim)
-        return [(cand[i], float(sim[i])) for i in order if cand[i] != word][:k]
+        return [(str(cand[i]), float(sim[i])) for i in order if cand[i] != word][:k]
 
 
 # ---------------------------------------------------------------------------
@@ -228,7 +228,7 @@ def toy_corpus():
     jump = "jump jumps jumping jumped jumper".split()
     glue = "the a he she they will can".split()
     sents = []
-    for _ in range(300):
+    for _ in range(150):
         fam = [play, walk, jump][rng.integers(0, 3)]
         s = list(rng.choice(glue, 2)) + list(rng.choice(fam, 3))
         rng.shuffle(s)
