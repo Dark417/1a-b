@@ -36,7 +36,8 @@ model_cfg = dict(
     in_channels=1,
     out_channels=1,
     layers_per_block=1,
-    block_out_channels=(16, 32),
+    block_out_channels=(32, 64),      # must be divisible by norm_num_groups (32)
+    norm_num_groups=32,
     down_block_types=("DownBlock2D", "AttnDownBlock2D"),
     up_block_types=("AttnUpBlock2D", "UpBlock2D"),
 )

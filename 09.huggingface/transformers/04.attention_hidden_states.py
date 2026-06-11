@@ -4,6 +4,10 @@
 output_attentions=True and output_hidden_states=True unlock the full internal
 state of the transformer for interpretability, probing, and embedding extraction.
 
+Important: output_attentions=True requires the "eager" attention implementation.
+The default SDPA (scaled dot-product attention) does not return attention weights.
+Pass attn_implementation="eager" to from_pretrained / from_config.
+
 Official docs:
   https://huggingface.co/docs/transformers/main_classes/output
   https://huggingface.co/docs/transformers/model_doc/bert#transformers.BertModel
@@ -20,14 +24,14 @@ torch.set_num_threads(1)
 torch.manual_seed(0)
 
 import torch.nn as nn
-from transformers import AutoTokenizer, AutoModel, BertConfig, BertModel
+from transformers import AutoTokenizer, AutoModel, BertConfig
 
 # ─── Load bert-tiny ───────────────────────────────────────────────────────────
 banner("Loading bert-tiny")
 
 ok_tok, tok = safe(AutoTokenizer.from_pretrained, "prajjwal1/bert-tiny")
-# attn_implementation="eager" is required for output_attentions=True in newer transformers
-# (the default "sdpa" backend drops attention weights for efficiency)
+# attn_implementation="eager" is required to get attention weight tensors back.
+# Default "sdpa" uses PyTorch's fused kernel which does not expose attention maps.
 ok_mdl, model = safe(
     AutoModel.from_pretrained,
     "prajjwal1/bert-tiny",
@@ -45,33 +49,26 @@ if LIVE:
     HIDDEN = model.config.hidden_size
     print(f"  bert-tiny: layers={NUM_LAYERS}, heads={NUM_HEADS}, hidden={HIDDEN}")
     print(f"  Input tokens: {tok.convert_ids_to_tokens(inputs['input_ids'][0].tolist())}")
+    inp = dict(inputs)
 else:
     note_skip(str(model if not ok_mdl else tok))
-    # Build from scratch — also use eager attention for output_attentions support
-    cfg = BertConfig(hidden_size=64, num_hidden_layers=2, num_attention_heads=2,
-                     intermediate_size=128, vocab_size=1000)
-    model = BertModel(cfg, add_pooling_layer=True)
+    # Build from scratch — use AutoModel.from_config for attn_implementation support
+    cfg = BertConfig(
+        hidden_size=64, num_hidden_layers=2, num_attention_heads=2,
+        intermediate_size=128, vocab_size=1000,
+    )
+    model = AutoModel.from_config(cfg, attn_implementation="eager")
     model.eval()
     NUM_LAYERS = cfg.num_hidden_layers
     NUM_HEADS = cfg.num_attention_heads
     HIDDEN = cfg.hidden_size
-    # Fake tokenizer
-    class FakeTok:
-        def __call__(self, text, return_tensors=None):
-            ids = torch.randint(1, 1000, (1, 7))
-            return type("Enc", (), {
-                "input_ids": ids,
-                "attention_mask": torch.ones_like(ids),
-                "__getitem__": lambda self, k: getattr(self, k),
-            })()
-        def convert_ids_to_tokens(self, ids):
-            return [f"tok{i}" for i in ids]
-    tok = FakeTok()
-    inputs = {"input_ids": torch.randint(1, 1000, (1, 7)),
-              "attention_mask": torch.ones(1, 7, dtype=torch.long)}
+    inp = {
+        "input_ids": torch.randint(1, 1000, (1, 7)),
+        "attention_mask": torch.ones(1, 7, dtype=torch.long),
+    }
     print(f"  [fallback] layers={NUM_LAYERS}, heads={NUM_HEADS}, hidden={HIDDEN}")
 
-SEQ_LEN = inputs["input_ids"].shape[1] if isinstance(inputs, dict) else inputs['input_ids'].shape[1]
+SEQ_LEN = inp["input_ids"].shape[1]
 
 # ─── 1. output_hidden_states=True ────────────────────────────────────────────
 banner("1. output_hidden_states=True — all layer representations")
@@ -82,7 +79,6 @@ banner("1. output_hidden_states=True — all layer representations")
 # Shape of each: (batch, seq_len, hidden_size)
 
 with torch.no_grad():
-    inp = dict(inputs) if isinstance(inputs, dict) else dict(inputs)
     outputs = model(**inp, output_hidden_states=True)
 
 hs = outputs.hidden_states   # tuple len = num_layers + 1
@@ -102,6 +98,7 @@ banner("2. output_attentions=True — attention weight matrices")
 # Shape of each: (batch, num_heads, seq_len, seq_len)
 # attentions[l][b, h, i, j] = how much token i attends to token j in layer l, head h
 # Note: values are AFTER softmax, so they sum to 1 along the last dim.
+# REQUIREMENT: model must use attn_implementation="eager" (see above).
 
 with torch.no_grad():
     outputs_att = model(**inp, output_attentions=True)
@@ -147,10 +144,7 @@ banner("5. Mean-Pool Embedding — averaging non-padding tokens")
 # More robust than CLS for some tasks (e.g., sentence-transformers use this).
 # Must mask padding tokens to avoid including their zeros in the average.
 
-if isinstance(inputs, dict):
-    mask = inputs["attention_mask"].unsqueeze(-1).float()  # (batch, seq, 1)
-else:
-    mask = inputs["attention_mask"].unsqueeze(-1).float()
+mask = inp["attention_mask"].unsqueeze(-1).float()  # (batch, seq, 1)
 
 last_hs = full_out.last_hidden_state       # (batch, seq, hidden)
 summed = (last_hs * mask).sum(dim=1)       # (batch, hidden)
@@ -169,20 +163,11 @@ banner("6. Per-Head Attention Analysis")
 # Different heads attend to different linguistic patterns.
 # We can inspect which tokens each head focuses on.
 
-# Guard: some model configs may not populate attentions in the combined call
-if full_out.attentions is None or len(full_out.attentions) == 0:
-    # Re-run with only output_attentions to ensure we get them
-    with torch.no_grad():
-        att_only_out = model(**inp, output_attentions=True)
-    att_source = att_only_out.attentions
-else:
-    att_source = full_out.attentions
-
-layer0_att = att_source[0]   # (batch, heads, seq, seq)
+layer0_att = full_out.attentions[0]   # (batch, heads, seq, seq)
 print(f"  Layer 0 attention shape: {tuple(layer0_att.shape)}")
 
 for h in range(NUM_HEADS):
-    # Average attention FROM all positions TO each token (column sum)
+    # Average attention FROM all positions TO each token (column mean)
     attn_to = layer0_att[0, h].mean(dim=0)   # (seq,)
     max_attended_pos = attn_to.argmax().item()
     print(f"  Head {h}: most attended position = {max_attended_pos}, "

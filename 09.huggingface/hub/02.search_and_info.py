@@ -28,12 +28,21 @@ banner("Part 1 — HfApi.list_models(filter='text-classification', limit=5)")
 print("Searching for text-classification models sorted by downloads ...")
 
 def fetch_models():
-    models = list(api.list_models(
-        filter    = "text-classification",
-        sort      = "downloads",
-        direction = -1,
-        limit     = 5,
-    ))
+    # direction=-1 (descending) supported in older hub; use try/except for compat
+    try:
+        models = list(api.list_models(
+            filter    = "text-classification",
+            sort      = "downloads",
+            direction = -1,
+            limit     = 5,
+        ))
+    except TypeError:
+        # newer huggingface_hub removed the direction kwarg
+        models = list(api.list_models(
+            filter = "text-classification",
+            sort   = "downloads",
+            limit  = 5,
+        ))
     return models
 
 ok, result = safe(fetch_models)
