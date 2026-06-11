@@ -21,29 +21,45 @@ like the essence of a good course condensed into runnable code.
   AI). Read this before adding anything.
 - 🖥️ **[`docs/gpu-setup.md`](docs/gpu-setup.md)** — CUDA / Apple-MPS / Colab
   setup (everything also runs on CPU).
-- 🏋️ **[`training-techniques/README.md`](training-techniques/README.md)** — the
+- 🏋️ **[`06.training-techniques/README.md`](06.training-techniques/README.md)** — the
   cross-cutting tricks, and which algorithms demonstrate them.
 
 ## Repository structure
 
+A numbered curriculum: **foundations → modern systems → engineering practice.**
+
 ```
-ml/                  Classic ML: linear models, SVM, trees, kNN,
-                     naive Bayes, clustering, dimensionality reduction
-dl/                  Basic deep learning: MLP, optimizers, regularization,
-                     CNNs, RNN/LSTM/GRU, autoencoders
-generative-models/   GANs, VAEs, diffusion, autoregressive, normalizing flows
-nlp/                 Text representation, embeddings, language models, seq2seq
-transformers/        Attention, the Transformer, BERT, GPT, ViT
-training-techniques/ Cross-cutting techniques referenced throughout
-common/              Shared template + small utilities
-docs/                Setup and reference docs
+01.ml/                  Classic ML: linear models, SVM, trees, kNN,
+                        naive Bayes, clustering, dimensionality reduction
+02.dl/                  Basic deep learning: MLP, optimizers, regularization,
+                        CNNs, RNN/LSTM/GRU, autoencoders
+03.generative-models/   GANs, VAEs, diffusion, autoregressive, normalizing flows
+04.nlp/                 Text representation, embeddings, language models, seq2seq
+05.transformers/        Attention, the Transformer, BERT/GPT/T5/ViT, and an
+                        exhaustive LLM-architecture catalogue (llm-architectures/)
+06.training-techniques/ Cross-cutting techniques referenced throughout
+07.frameworks/          RAG, MCP, agents, serving, fine-tuning, eval, vector DBs,
+                        observability, guardrails … full-featured, run locally
+08.claudecode/          Clean-room Claude-Code-style coding agent (Python + Ruby)
+                        + architecture docs (from public sources)
+09.huggingface/         The Hugging Face ecosystem: manifest, workflow, internals
+10.gpu/                 CUDA / GPU engineering tutorials
+11.agent-ai-engineer/   Researched + ranked AI-engineer skill profile (job market)
+12.agent-ai-skills/     One rich explainer per ranked skill
+common/ tools/ docs/    Infrastructure (shared utils, notebook builder, setup)
+.claude/skills/         The `tutorial-architect` authoring skill
 ```
+
+Sections **01–06** are the from-scratch algorithm curriculum (NumPy + PyTorch +
+notebooks). Sections **07–12** cover the modern LLM/agent engineering stack with
+full-featured, locally-runnable tutorials and researched reference material. See
+[`MANIFEST.md`](MANIFEST.md) for the complete catalogue and build status.
 
 Each leaf holds an algorithm as a pair of files:
 
 ```
-ml/clustering/kmeans.py      # NumPy + PyTorch implementations + demo
-ml/clustering/kmeans.ipynb   # concept + math derivation + the same code
+01.ml/clustering/kmeans.py      # NumPy + PyTorch implementations + demo
+01.ml/clustering/kmeans.ipynb   # concept + math derivation + the same code
 ```
 
 ## How each algorithm is taught
@@ -64,11 +80,11 @@ ml/clustering/kmeans.ipynb   # concept + math derivation + the same code
 pip install -r requirements.txt
 
 # 2. Run any algorithm module directly
-python ml/linear-models/linear_regression.py
-python transformers/architectures/transformer.py
+python 01.ml/linear-models/linear_regression.py
+python 05.transformers/architectures/transformer.py
 
 # 3. Or open the matching notebook for the full explanation
-jupyter lab ml/linear-models/linear_regression.ipynb
+jupyter lab 01.ml/linear-models/linear_regression.ipynb
 ```
 
 For GPU acceleration (optional), see [`docs/gpu-setup.md`](docs/gpu-setup.md).

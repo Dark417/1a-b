@@ -1,0 +1,16 @@
+# The offline path (MockBackend, tools, permissions, context, MCP
+# client/server, demo) uses ONLY the Ruby standard library. No gems are
+# required to run `ruby demo.rb`.
+#
+# The optional real-Claude backend (MiniAgent::AnthropicBackend) needs the
+# `anthropic` gem and ANTHROPIC_API_KEY. Uncomment to install it:
+#
+# source "https://rubygems.org"
+# gem "anthropic"
+#
+# The OllamaBackend uses Net::HTTP from the stdlib, so it needs no gem — just a
+# running local Ollama server.
+
+source "https://rubygems.org"
+
+# (intentionally empty for the offline path)

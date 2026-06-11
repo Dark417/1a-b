@@ -1,0 +1,8 @@
+# MCP server examples — pinned deps for THIS tutorial.
+# We build the example servers with the high-level FastMCP API from the official
+# SDK. sqlite/json/urllib are all stdlib, so no extra deps are required for the
+# server logic itself.
+mcp>=1.9.0
+
+# Every server here is exercised by an in-process / stdio client and degrades to
+# a stdlib fallback if `mcp` is missing, so the tutorial runs offline.

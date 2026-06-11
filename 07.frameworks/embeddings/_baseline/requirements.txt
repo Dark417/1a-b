@@ -1,0 +1,5 @@
+# _baseline/ — the always-runs lexical embedding baseline.
+# Deliberately ZERO heavy dependencies: pure NumPy + the Python stdlib.
+# This is the floor of the offline contract — it runs anywhere, no model
+# download, no network.
+numpy>=1.23

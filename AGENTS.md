@@ -27,27 +27,52 @@ condensed into runnable code.
    idea*. (Show the vectorized version too, when it teaches something.)
 4. **Comprehensive, not shallow.** Cover the major algorithm, its **variants**,
    and the **training techniques** that matter for it (see §5).
-5. **Self-contained.** Each file runs on its own: `python ml/.../name.py`
+5. **Self-contained.** Each file runs on its own: `python 01.ml/.../name.py`
    produces output / a plot / printed metrics. No hidden global state.
 
 ---
 
-## 1. Directory layout
+## 1. Directory layout & numbering
+
+**Two-digit numbering.** Top-level *curriculum* sections carry a two-digit
+numeric prefix that defines the learning order. Inside a section, when ordering
+matters, number files/folders the same way (`01.intro.md`, `02.<topic>/`).
+Infrastructure dirs (`common/`, `tools/`, `docs/`, `.claude/`) and root files
+are **not** numbered.
 
 ```
-category/                     # ml, dl, generative-models, nlp, transformers
-  sub-category/               # e.g. linear-models, gan, attention
+01.ml/                  classic machine learning
+02.dl/                  basic deep learning
+03.generative-models/   GANs, VAEs, diffusion, flows, autoregressive
+04.nlp/                 classic→neural NLP
+05.transformers/        attention, the Transformer, LLM architectures (catalogue)
+06.training-techniques/ cross-cutting techniques reference
+07.frameworks/          RAG, MCP, agents, serving, fine-tuning, eval … (run locally)
+08.claudecode/          clean-room Claude-Code-style agent (Python + Ruby) + arch docs
+09.huggingface/         the HF ecosystem: manifest, workflow, architecture, examples
+10.gpu/                 CUDA / GPU engineering tutorials
+11.agent-ai-engineer/   researched, ranked AI-engineer skill profile (job-market)
+12.agent-ai-skills/     one rich explainer file per ranked skill
+common/ tools/ docs/ .claude/   infrastructure (unnumbered)
+```
+
+```
+NN.section/
+  sub-category/               # e.g. linear-models, gan, attention, rag/langchain
     extra-layer/              # OPTIONAL — only when a family is large
-      algorithm.py
+      algorithm.py | tutorial files
       algorithm.ipynb
 ```
 
-- Add an **extra layer** only when a sub-category holds many related models
-  (e.g. `generative-models/gan/` already is that layer; a future
-  `gan/conditional/` would be a third layer). Do not over-nest.
-- Folder names: lowercase, `kebab-case`. File/base names: lowercase,
-  `snake_case` (so they are importable Python modules).
-- Each top-level category has a `README.md` indexing its contents.
+- Add an **extra layer** only when a sub-category holds many related items
+  (e.g. `03.generative-models/gan/` already is that layer). Do not over-nest.
+- Folder names: lowercase, `kebab-case` (after the optional `NN.` prefix).
+  Python module base names: lowercase `snake_case` (importable). Numeric
+  prefixes are for ordering files/sections, not Python modules that get
+  `import`ed by name.
+- Each top-level section has a `README.md` indexing its contents.
+- When you add or renumber a section, keep [`MAP.md`](MAP.md), the root
+  [`README.md`](README.md) index, and `tools/nbreg.py` `_CODE_DIRS` in sync.
 
 ---
 
@@ -67,7 +92,7 @@ Variants implemented here:
     - <variant B>
 
 Training techniques demonstrated:
-    - <technique> (see training-techniques/README.md)
+    - <technique> (see 06.training-techniques/README.md)
 
 References:
     - <paper / textbook chapter>
@@ -138,9 +163,27 @@ Standard cell order:
 **Rules for notebooks**
 - Math uses LaTeX: `$...$` inline, `$$...$$` block.
 - Every notebook must run top-to-bottom without error on CPU.
-- Keep cell outputs out of version control where practical (clear before
-  commit), or keep them small.
-- The notebook and the `.py` should not drift: the code cells are the same code.
+- Keep cell outputs out of version control (the builder writes empty outputs;
+  validate with `nbconvert --execute` to a throwaway path, don't commit outputs).
+- The notebook and the `.py` should not drift.
+
+**How notebooks are generated (no drift).** Notebooks are *built* from a spec, not
+hand-edited, so the code never diverges from the module:
+- Author the concept/math markdown + plot/training cells in
+  `tools/specs/<name>.py` (one `build()` returning a list of cells), and register
+  it with `@register(name, "path/to/<name>.ipynb")`.
+- Code cells that present the implementation use the `show(module, "ClassName")`
+  helper. At build time this **copies the real source code** out of the `.py`
+  (via `ast`) and embeds it as an actual, runnable code cell — so the notebook
+  *contains* the same code, not a reflection of it. The first `show(...)` for a
+  module also carries that module's preamble (imports, constants, module-level
+  helpers, `demo()`), so the notebook runs top-to-bottom on its own.
+- `run_demo(module)` emits a `demo()` call (defined by the embedded preamble).
+- Run `python tools/build_notebooks.py [name]` (or
+  `python tools/build_one.py tools/specs/<name>.py`) to (re)generate. Both call
+  `finalize()` which resolves the `show` markers into the embedded code.
+- See `common/nbgen.py` (JSON writer) and `tools/nbreg.py` (registry, `show`,
+  `finalize`, source extraction).
 
 ---
 
@@ -170,7 +213,7 @@ files.
 - The **same technique may appear in several algorithms**. That repetition is
   intentional and good for a tutorial.
 - Each technique has a canonical "home" demo recorded in the table in
-  [`training-techniques/README.md`](training-techniques/README.md); when you use
+  [`06.training-techniques/README.md`](06.training-techniques/README.md); when you use
   it elsewhere, link back to that write-up rather than re-deriving it in full.
 - When a model is a natural showcase for a technique (e.g. RNN ↔ vanishing
   gradients, ResNet ↔ skip connections), make that demonstration *explicit*:
@@ -195,8 +238,9 @@ files.
 2. [ ] Copy `common/template.py` → `category/sub/name.py`; implement NumPy +
        PyTorch + demo + variants.
 3. [ ] Verify it runs: `python category/sub/name.py`.
-4. [ ] Create `name.ipynb` with the 7-section structure (§3); ensure it runs
-       top-to-bottom.
+4. [ ] Add `tools/specs/name.py` (concept + math + cells) and run
+       `python tools/build_notebooks.py name`; ensure the `.ipynb` runs
+       top-to-bottom (`nbconvert --execute`).
 5. [ ] Demonstrate the relevant training technique(s) explicitly.
 6. [ ] Update the category `README.md` index and set `MAP.md` status to `[x]`.
 7. [ ] Commit with a clear message: `add <category>/<name> (numpy+torch+nb)`.

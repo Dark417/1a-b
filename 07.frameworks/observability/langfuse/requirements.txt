@@ -1,0 +1,8 @@
+# Langfuse tutorial.
+# The tutorial runs OFFLINE with or without this package (graceful no-op stub),
+# but install it to use the real SDK and (optionally) export to a server.
+langfuse>=3.0.0
+
+# Optional drop-in integrations (not required to run the tutorial):
+# langfuse[openai]      # auto-traces openai calls
+# langchain             # CallbackHandler integration

@@ -1,0 +1,8 @@
+# peft-lora tutorial — pinned-ish deps (CPU-runnable)
+# Real fine-tuning uses a GPU, but these examples run on CPU with tiny models.
+torch>=2.2
+transformers>=4.44
+peft>=0.11
+datasets>=2.19
+accelerate>=0.30
+# bitsandbytes is only needed for the QLoRA cross-reference (GPU); see ../qlora/
