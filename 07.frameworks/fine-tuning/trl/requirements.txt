@@ -1,0 +1,7 @@
+# TRL tutorial — CPU-runnable with tiny models.
+torch>=2.2
+transformers>=4.44
+trl>=0.9
+peft>=0.11
+datasets>=2.19
+accelerate>=0.30

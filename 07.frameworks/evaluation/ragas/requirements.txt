@@ -1,0 +1,13 @@
+# RAGAS tutorial — pinned deps for THIS tutorial.
+#
+# The from-scratch metric files (01–03, app.py) need NOTHING beyond the Python
+# standard library; they reimplement faithfulness / answer-relevancy /
+# context-precision / context-recall with a deterministic mock judge and run
+# fully offline (exit 0, no API key).
+#
+# Optional — to run the REAL library (file 04 detects it and degrades gracefully
+# if absent). RAGAS defaults to OpenAI, so a real run needs a judge LLM + network:
+#   https://docs.ragas.io/
+# ragas>=0.2.0
+# datasets>=2.16.0
+# langchain>=0.2.0

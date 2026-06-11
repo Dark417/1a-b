@@ -1,0 +1,10 @@
+# FastMCP tutorial — pinned deps for THIS tutorial.
+# FastMCP is the "batteries-included" framework for building MCP servers AND
+# clients. v2/v3 is a superset of the FastMCP that ships inside the official
+# `mcp` SDK: it adds an in-memory test client, auth, server composition/proxying,
+# OpenAPI/FastAPI generation, and more.
+#   https://gofastmcp.com  ·  https://github.com/jlowin/fastmcp
+fastmcp>=2.0
+
+# Every .py here degrades gracefully if fastmcp is missing (prints a skip note
+# and exits 0), so the tutorial still runs offline with no installs.

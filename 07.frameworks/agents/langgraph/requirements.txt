@@ -1,0 +1,9 @@
+# LangGraph agent tutorial — pinned deps (pure-Python, CPU, offline-runnable).
+# Install: pip install -r requirements.txt
+langgraph>=1.0,<2
+langchain-core>=1.0,<2
+pydantic>=2.7,<3
+
+# Optional, for a LIVE model (not needed for any example here):
+#   pip install langchain-openai     # then set OPENAI_API_KEY and use ChatOpenAI
+#   pip install langchain-anthropic  # then set ANTHROPIC_API_KEY and use ChatAnthropic

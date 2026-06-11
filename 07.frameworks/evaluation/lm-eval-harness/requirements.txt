@@ -1,0 +1,10 @@
+# lm-evaluation-harness tutorial — pinned deps for THIS tutorial.
+#
+# The from-scratch files (01–04, app.py) need NOTHING beyond the Python standard
+# library; they reimplement the harness's core loop offline so every file exits 0
+# with no installs and no network.
+#
+# The real package (optional). File 04 detects it and prints the real CLI, but
+# never auto-downloads a model/dataset:
+#   https://github.com/EleutherAI/lm-evaluation-harness
+# lm-eval>=0.4.3

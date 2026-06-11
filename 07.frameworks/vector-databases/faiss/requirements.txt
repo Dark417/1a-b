@@ -1,0 +1,20 @@
+# Dependencies for the FAISS tutorial.
+# Pinned to the versions this tutorial was authored & validated against
+# (Python 3.11). FAISS is fully local — no network needed at runtime.
+#
+#   faiss 1.14.2
+#   numpy 2.4.6
+#
+# Install (CPU build):
+#   pip install -r requirements.txt
+#
+# For a CUDA GPU build instead of faiss-cpu, use the conda channel:
+#   conda install -c pytorch -c nvidia faiss-gpu=1.14.2
+# (see 06.gpu_note.py and the README "GPU" section).
+
+faiss-cpu>=1.8,<2
+numpy>=2,<3
+
+# Optional — only used by _embed.get_embedder() if already cached offline.
+# The tutorial runs fully without it (HashingEmbedder fallback).
+# sentence-transformers>=2.2
