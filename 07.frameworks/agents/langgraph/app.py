@@ -22,9 +22,10 @@ import operator
 import pathlib
 from typing import Annotated, TypedDict
 
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, AnyMessage, HumanMessage, ToolMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
+from langgraph.graph.message import add_messages
 from langgraph.types import Command, interrupt
 
 _spec = importlib.util.spec_from_file_location(
@@ -38,7 +39,7 @@ TOOLS = {t.name: t for t in mock.ALL_TOOLS}
 class State(TypedDict):
     question: str
     plan: list[str]
-    messages: Annotated[list[BaseMessage], operator.add]
+    messages: Annotated[list[AnyMessage], add_messages]
     findings: Annotated[list[str], operator.add]
     loops: int
     approved: str
@@ -137,8 +138,8 @@ def main() -> None:
             print(f"   [{node}] updated: {keys}")
 
     state = app.get_state(cfg)
-    if "__interrupt__" in (state.tasks[0].interrupts and {"__interrupt__": 1} or {}) or state.next:
-        pass  # (the graph paused at the approval gate)
+    assert state.next, "graph should be paused at the approval gate"
+    print(f"\n(graph paused; next node = {state.next})")
 
     print("\n=== human-in-the-loop: approving publication ===")
     final = app.invoke(Command(resume="approve"), cfg)
