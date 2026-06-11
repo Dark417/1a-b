@@ -26,18 +26,34 @@ like the essence of a good course condensed into runnable code.
 
 ## Repository structure
 
+A numbered curriculum: **foundations → modern systems → engineering practice.**
+
 ```
 01.ml/                  Classic ML: linear models, SVM, trees, kNN,
-                     naive Bayes, clustering, dimensionality reduction
+                        naive Bayes, clustering, dimensionality reduction
 02.dl/                  Basic deep learning: MLP, optimizers, regularization,
-                     CNNs, RNN/LSTM/GRU, autoencoders
+                        CNNs, RNN/LSTM/GRU, autoencoders
 03.generative-models/   GANs, VAEs, diffusion, autoregressive, normalizing flows
 04.nlp/                 Text representation, embeddings, language models, seq2seq
-05.transformers/        Attention, the Transformer, BERT, GPT, ViT
+05.transformers/        Attention, the Transformer, BERT/GPT/T5/ViT, and an
+                        exhaustive LLM-architecture catalogue (llm-architectures/)
 06.training-techniques/ Cross-cutting techniques referenced throughout
-common/              Shared template + small utilities
-docs/                Setup and reference docs
+07.frameworks/          RAG, MCP, agents, serving, fine-tuning, eval, vector DBs,
+                        observability, guardrails … full-featured, run locally
+08.claudecode/          Clean-room Claude-Code-style coding agent (Python + Ruby)
+                        + architecture docs (from public sources)
+09.huggingface/         The Hugging Face ecosystem: manifest, workflow, internals
+10.gpu/                 CUDA / GPU engineering tutorials
+11.agent-ai-engineer/   Researched + ranked AI-engineer skill profile (job market)
+12.agent-ai-skills/     One rich explainer per ranked skill
+common/ tools/ docs/    Infrastructure (shared utils, notebook builder, setup)
+.claude/skills/         The `tutorial-architect` authoring skill
 ```
+
+Sections **01–06** are the from-scratch algorithm curriculum (NumPy + PyTorch +
+notebooks). Sections **07–12** cover the modern LLM/agent engineering stack with
+full-featured, locally-runnable tutorials and researched reference material. See
+[`MANIFEST.md`](MANIFEST.md) for the complete catalogue and build status.
 
 Each leaf holds an algorithm as a pair of files:
 
