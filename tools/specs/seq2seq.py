@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "seq2seq"
 
 
-@register("seq2seq", "dl/rnn/seq2seq.ipynb")
+@register("seq2seq", "02.dl/rnn/seq2seq.ipynb")
 def build():
     return [
         md(r"""
@@ -152,6 +152,6 @@ plt.tight_layout(); plt.show()
   never teacher force at test time); mask `<pad>` positions in attention and in
   the loss (`ignore_index`); and clip gradients — the decoder is deep in time.
 - **Next:** stack attention everywhere and drop recurrence →
-  [Transformers](../../transformers/architectures/transformer.ipynb).
+  [Transformers](../../05.transformers/architectures/transformer.ipynb).
 """),
     ]

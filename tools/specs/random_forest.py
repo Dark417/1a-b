@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "random_forest"
 
 
-@register("random_forest", "ml/trees/random_forest.ipynb")
+@register("random_forest", "01.ml/trees/random_forest.ipynb")
 def build():
     return [
         md(r"""

@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "fasttext"
 
 
-@register("fasttext", "nlp/embeddings/fasttext.ipynb")
+@register("fasttext", "04.nlp/embeddings/fasttext.ipynb")
 def build():
     return [
         md(r"""
@@ -108,7 +108,7 @@ plt.tight_layout(); plt.show()
   fewer collisions at the cost of memory.
 - It still produces **static** embeddings (one vector per word/subword, no
   context). Subword tokenization (BPE/WordPiece) carries this idea into
-  [Transformers](../../transformers/architectures/transformer.ipynb), but there
+  [Transformers](../../05.transformers/architectures/transformer.ipynb), but there
   the *contextual* representation comes from attention, not a fixed sum.
 """),
     ]

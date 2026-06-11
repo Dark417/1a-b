@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "svr"
 
 
-@register("svr", "ml/svm/svr.ipynb")
+@register("svr", "01.ml/svm/svr.ipynb")
 def build():
     return [
         md(r"""

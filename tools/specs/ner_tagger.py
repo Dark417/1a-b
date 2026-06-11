@@ -3,14 +3,14 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "ner_tagger"
 
 
-@register("ner_tagger", "nlp/seq2seq/ner_tagger.ipynb")
+@register("ner_tagger", "04.nlp/seq2seq/ner_tagger.ipynb")
 def build():
     return [
         md(r"""
 # Sequence Tagging — BiLSTM + linear-chain CRF
 
 > Tutorial pair for [`ner_tagger.py`](ner_tagger.py). Uses the
-> [LSTM](../../dl/rnn/lstm.ipynb) as its backbone.
+> [LSTM](../../02.dl/rnn/lstm.ipynb) as its backbone.
 
 ## 1. Intuition
 Tasks like **named-entity recognition** label every token: is "Paris" a location,
@@ -112,7 +112,7 @@ fig.colorbar(im, ax=ax, label="transition score"); plt.tight_layout(); plt.show(
   shows up on **ambiguous tokens and long spans**, where the transition grammar
   breaks ties. Inspect the transition matrix to see the grammar it learned.
 - This is the architecture behind classic neural NER (Lample et al., 2016); modern
-  systems swap the BiLSTM for a [Transformer](../../transformers/architectures/transformer.ipynb)
+  systems swap the BiLSTM for a [Transformer](../../05.transformers/architectures/transformer.ipynb)
   encoder but often keep the CRF head.
 """),
     ]

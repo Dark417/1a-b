@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "autoencoder"
 
 
-@register("autoencoder", "dl/autoencoder/autoencoder.ipynb")
+@register("autoencoder", "02.dl/autoencoder/autoencoder.ipynb")
 def build():
     return [
         md(r"""
@@ -103,6 +103,6 @@ plt.tight_layout(); plt.show()
 - **Contractive** explicitly trades reconstruction for robustness of the code.
 - Plain autoencoders are *not* generative — sampling a random code rarely decodes
   to a valid image. For that you need a probabilistic latent: see
-  [`generative-models/vae/vae`](../../generative-models/vae/vae.ipynb).
+  [`03.generative-models/vae/vae`](../../03.generative-models/vae/vae.ipynb).
 """),
     ]

@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "decision_tree"
 
 
-@register("decision_tree", "ml/trees/decision_tree.ipynb")
+@register("decision_tree", "01.ml/trees/decision_tree.ipynb")
 def build():
     return [
         md(r"""
@@ -91,6 +91,6 @@ plt.tight_layout(); plt.show()
 - No feature scaling needed; handles mixed feature types and is interpretable.
 - A single tree is weak/unstable → **ensembles**: random forest (bag many trees
   on bootstrap samples + feature subsets) and gradient boosting (fit trees to
-  residuals). Those are the next files in `ml/trees/` and `ml/ensemble/`.
+  residuals). Those are the next files in `01.ml/trees/` and `01.ml/ensemble/`.
 """),
     ]

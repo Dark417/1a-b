@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "gru"
 
 
-@register("gru", "dl/rnn/gru.ipynb")
+@register("gru", "02.dl/rnn/gru.ipynb")
 def build():
     return [
         md(r"""
@@ -134,6 +134,6 @@ plt.tight_layout(); plt.show()
 - **Pitfall — gate saturation:** if $u_t$ saturates near 0 early, the model
   behaves like a plain RNN and gradients vanish; clipping + good init help.
 - **Next:** drop recurrence entirely and attend directly to every step →
-  [Transformers](../../transformers/architectures/transformer.ipynb).
+  [Transformers](../../05.transformers/architectures/transformer.ipynb).
 """),
     ]

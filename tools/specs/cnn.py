@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "cnn"
 
 
-@register("cnn", "dl/cnn/cnn.ipynb")
+@register("cnn", "02.dl/cnn/cnn.ipynb")
 def build():
     return [
         md(r"""
@@ -77,6 +77,6 @@ plt.tight_layout(); plt.show()
 - Convolution = local connectivity + weight sharing → few params, equivariance.
 - im2col turns conv into a matmul (how real frameworks do it under the hood).
 - Very deep CNNs still hit vanishing gradients → **BatchNorm** and **residual
-  connections** (ResNet, next file) fix it — see `training-techniques/README.md`.
+  connections** (ResNet, next file) fix it — see `06.training-techniques/README.md`.
 """),
     ]

@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "regularization"
 
 
-@register("regularization", "dl/regularization/regularization.ipynb")
+@register("regularization", "02.dl/regularization/regularization.ipynb")
 def build():
     return [
         md(r"""
@@ -11,7 +11,7 @@ def build():
 
 > Tutorial pair for [`regularization.py`](regularization.py).
 > This is the **canonical home** for Dropout, BatchNorm and LayerNorm
-> (see `training-techniques/README.md`).
+> (see `06.training-techniques/README.md`).
 
 ## 1. Intuition
 A network with enough parameters can memorize its training set perfectly and still
@@ -123,7 +123,7 @@ plt.tight_layout(); plt.show()
   needs *running stats* at test time; it struggles with tiny batches → use
   **LayerNorm** (per-sample) in Transformers / RNNs.
 - **Weight decay** ≈ L2; with adaptive optimizers prefer *decoupled* decay (AdamW,
-  see `dl/optimizers/optimizers.ipynb`).
+  see `02.dl/optimizers/optimizers.ipynb`).
 - **Early stopping** is the cheapest regularizer — always keep a validation split.
 - **Label smoothing** trades a touch of accuracy for much better calibration.
 - These compose; don't stack so much regularization that the model underfits.

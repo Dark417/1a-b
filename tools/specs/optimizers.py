@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "optimizers"
 
 
-@register("optimizers", "dl/optimizers/optimizers.ipynb")
+@register("optimizers", "02.dl/optimizers/optimizers.ipynb")
 def build():
     return [
         md(r"""
@@ -125,6 +125,6 @@ plt.legend(loc="upper left", fontsize=8); plt.tight_layout(); plt.show()
 - Adaptive methods can converge to *worse* minima than well-tuned SGD+momentum on
   some vision tasks; there is no universally best optimizer.
 - LR scheduling/warmup composes with any of these — see the transformer file and
-  `training-techniques/README.md`.
+  `06.training-techniques/README.md`.
 """),
     ]

@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "umap"
 
 
-@register("umap", "ml/dimensionality-reduction/umap.ipynb")
+@register("umap", "01.ml/dimensionality-reduction/umap.ipynb")
 def build():
     return [
         md(r"""

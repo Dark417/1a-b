@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "positional_encoding"
 
 
-@register("positional_encoding", "transformers/attention/positional_encoding.ipynb")
+@register("positional_encoding", "05.transformers/attention/positional_encoding.ipynb")
 def build():
     return [
         md(r"""

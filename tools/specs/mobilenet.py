@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "mobilenet"
 
 
-@register("mobilenet", "dl/cnn/mobilenet.ipynb")
+@register("mobilenet", "02.dl/cnn/mobilenet.ipynb")
 def build():
     return [
         md(r"""

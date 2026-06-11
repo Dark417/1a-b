@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "gaussian_mixture"
 
 
-@register("gaussian_mixture", "ml/clustering/gaussian_mixture.ipynb")
+@register("gaussian_mixture", "01.ml/clustering/gaussian_mixture.ipynb")
 def build():
     return [
         md(r"""

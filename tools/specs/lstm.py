@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "lstm"
 
 
-@register("lstm", "dl/rnn/lstm.ipynb")
+@register("lstm", "02.dl/rnn/lstm.ipynb")
 def build():
     return [
         md(r"""
@@ -78,6 +78,6 @@ plt.legend(); plt.tight_layout(); plt.show()
 - Forget-gate bias $=1$ is a useful default.
 - **GRU** ≈ LSTM with fewer parameters; try both.
 - Attention (next major topic) drops recurrence entirely for direct,
-  constant-path access to every step → [Transformers](../../transformers/architectures/transformer.ipynb).
+  constant-path access to every step → [Transformers](../../05.transformers/architectures/transformer.ipynb).
 """),
     ]

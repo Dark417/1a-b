@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "logistic_regression"
 
 
-@register("logistic_regression", "ml/linear-models/logistic_regression.ipynb")
+@register("logistic_regression", "01.ml/linear-models/logistic_regression.ipynb")
 def build():
     return [
         md(r"""
@@ -90,6 +90,6 @@ plt.tight_layout(); plt.show()
 - The boundary is **linear**; for nonlinear data, add features or hidden layers.
 - Always use the *logits* loss (`BCEWithLogitsLoss`) for stability.
 
-**Next:** stack these neurons with nonlinearities → [the MLP](../../dl/mlp/mlp.ipynb).
+**Next:** stack these neurons with nonlinearities → [the MLP](../../02.dl/mlp/mlp.ipynb).
 """),
     ]

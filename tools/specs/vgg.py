@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "vgg"
 
 
-@register("vgg", "dl/cnn/vgg.ipynb")
+@register("vgg", "02.dl/cnn/vgg.ipynb")
 def build():
     return [
         md(r"""
@@ -26,7 +26,7 @@ nonlinearities** (a ReLU between each conv). Uniform, simple, and very deep.
   motif is identical.
 - **Two $3\times3$ convs $\equiv$ one $5\times5$ receptive field**; three
   $\equiv$ one $7\times7$. The stacked version is cheaper and more expressive.
-- **He init** for the ReLU stacks (see `training-techniques/README.md`).
+- **He init** for the ReLU stacks (see `06.training-techniques/README.md`).
 """),
         md(r"""
 ## 3. Math — receptive field & parameter count
@@ -92,6 +92,6 @@ plt.grid(True, alpha=.3); plt.tight_layout(); plt.show()
   the dense layers, not the convs. Global average pooling (used here) fixes that.
 - **Pitfall:** very deep *plain* stacks still hit the degradation/vanishing-
   gradient wall — VGG was near the practical limit before residual connections
-  (ResNet) made arbitrary depth trainable. See `training-techniques/README.md`.
+  (ResNet) made arbitrary depth trainable. See `06.training-techniques/README.md`.
 """),
     ]

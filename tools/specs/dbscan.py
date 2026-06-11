@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "dbscan"
 
 
-@register("dbscan", "ml/clustering/dbscan.ipynb")
+@register("dbscan", "01.ml/clustering/dbscan.ipynb")
 def build():
     return [
         md(r"""

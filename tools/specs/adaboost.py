@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "adaboost"
 
 
-@register("adaboost", "ml/trees/adaboost.ipynb")
+@register("adaboost", "01.ml/trees/adaboost.ipynb")
 def build():
     return [
         md(r"""

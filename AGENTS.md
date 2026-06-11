@@ -27,27 +27,52 @@ condensed into runnable code.
    idea*. (Show the vectorized version too, when it teaches something.)
 4. **Comprehensive, not shallow.** Cover the major algorithm, its **variants**,
    and the **training techniques** that matter for it (see §5).
-5. **Self-contained.** Each file runs on its own: `python ml/.../name.py`
+5. **Self-contained.** Each file runs on its own: `python 01.ml/.../name.py`
    produces output / a plot / printed metrics. No hidden global state.
 
 ---
 
-## 1. Directory layout
+## 1. Directory layout & numbering
+
+**Two-digit numbering.** Top-level *curriculum* sections carry a two-digit
+numeric prefix that defines the learning order. Inside a section, when ordering
+matters, number files/folders the same way (`01.intro.md`, `02.<topic>/`).
+Infrastructure dirs (`common/`, `tools/`, `docs/`, `.claude/`) and root files
+are **not** numbered.
 
 ```
-category/                     # ml, dl, generative-models, nlp, transformers
-  sub-category/               # e.g. linear-models, gan, attention
+01.ml/                  classic machine learning
+02.dl/                  basic deep learning
+03.generative-models/   GANs, VAEs, diffusion, flows, autoregressive
+04.nlp/                 classic→neural NLP
+05.transformers/        attention, the Transformer, LLM architectures (catalogue)
+06.training-techniques/ cross-cutting techniques reference
+07.frameworks/          RAG, MCP, agents, serving, fine-tuning, eval … (run locally)
+08.claudecode/          clean-room Claude-Code-style agent (Python + Ruby) + arch docs
+09.huggingface/         the HF ecosystem: manifest, workflow, architecture, examples
+10.gpu/                 CUDA / GPU engineering tutorials
+11.agent-ai-engineer/   researched, ranked AI-engineer skill profile (job-market)
+12.agent-ai-skills/     one rich explainer file per ranked skill
+common/ tools/ docs/ .claude/   infrastructure (unnumbered)
+```
+
+```
+NN.section/
+  sub-category/               # e.g. linear-models, gan, attention, rag/langchain
     extra-layer/              # OPTIONAL — only when a family is large
-      algorithm.py
+      algorithm.py | tutorial files
       algorithm.ipynb
 ```
 
-- Add an **extra layer** only when a sub-category holds many related models
-  (e.g. `generative-models/gan/` already is that layer; a future
-  `gan/conditional/` would be a third layer). Do not over-nest.
-- Folder names: lowercase, `kebab-case`. File/base names: lowercase,
-  `snake_case` (so they are importable Python modules).
-- Each top-level category has a `README.md` indexing its contents.
+- Add an **extra layer** only when a sub-category holds many related items
+  (e.g. `03.generative-models/gan/` already is that layer). Do not over-nest.
+- Folder names: lowercase, `kebab-case` (after the optional `NN.` prefix).
+  Python module base names: lowercase `snake_case` (importable). Numeric
+  prefixes are for ordering files/sections, not Python modules that get
+  `import`ed by name.
+- Each top-level section has a `README.md` indexing its contents.
+- When you add or renumber a section, keep [`MAP.md`](MAP.md), the root
+  [`README.md`](README.md) index, and `tools/nbreg.py` `_CODE_DIRS` in sync.
 
 ---
 
@@ -67,7 +92,7 @@ Variants implemented here:
     - <variant B>
 
 Training techniques demonstrated:
-    - <technique> (see training-techniques/README.md)
+    - <technique> (see 06.training-techniques/README.md)
 
 References:
     - <paper / textbook chapter>
@@ -188,7 +213,7 @@ files.
 - The **same technique may appear in several algorithms**. That repetition is
   intentional and good for a tutorial.
 - Each technique has a canonical "home" demo recorded in the table in
-  [`training-techniques/README.md`](training-techniques/README.md); when you use
+  [`06.training-techniques/README.md`](06.training-techniques/README.md); when you use
   it elsewhere, link back to that write-up rather than re-deriving it in full.
 - When a model is a natural showcase for a technique (e.g. RNN ↔ vanishing
   gradients, ResNet ↔ skip connections), make that demonstration *explicit*:

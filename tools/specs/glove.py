@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "glove"
 
 
-@register("glove", "nlp/embeddings/glove.ipynb")
+@register("glove", "04.nlp/embeddings/glove.ipynb")
 def build():
     return [
         md(r"""
@@ -108,7 +108,7 @@ plt.tight_layout(); plt.show()
   $f(0)=0$ you also skip the overwhelmingly common zero entries.
 - Use the **sum** $w_i+\tilde w_i$ as the final vector — it averages out noise.
 - Static embeddings still give one vector per word — context-dependent meaning
-  needs [Transformers](../../transformers/architectures/transformer.ipynb).
+  needs [Transformers](../../05.transformers/architectures/transformer.ipynb).
 - On a *tiny* toy corpus the co-occurrence matrix is sparse and noisy; real GloVe
   shines on billions of tokens.
 """),

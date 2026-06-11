@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "ddpm"
 
 
-@register("ddpm", "generative-models/diffusion/ddpm.ipynb")
+@register("ddpm", "03.generative-models/diffusion/ddpm.ipynb")
 def build():
     return [
         md(r"""

@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "gpt"
 
 
-@register("gpt", "transformers/architectures/gpt.ipynb")
+@register("gpt", "05.transformers/architectures/gpt.ipynb")
 def build():
     return [
         md(r"""

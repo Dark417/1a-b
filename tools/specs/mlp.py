@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "mlp"
 
 
-@register("mlp", "dl/mlp/mlp.ipynb")
+@register("mlp", "02.dl/mlp/mlp.ipynb")
 def build():
     return [
         md(r"""
@@ -93,7 +93,7 @@ plt.tight_layout(); plt.show()
 - Backprop = chain rule + caching; the softmax+CE output gives $\delta=a-y$.
 - **Initialization is not a detail** — it decides whether deep nets train at all.
 - Vanishing gradients motivate ReLU/He, BatchNorm, and residual connections
-  (see `training-techniques/README.md`).
+  (see `06.training-techniques/README.md`).
 
 **Next:** add weight sharing over space → [CNNs](../cnn/cnn.ipynb); over time →
 [RNNs](../rnn/rnn.ipynb).

@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "ngram_lm"
 
 
-@register("ngram_lm", "nlp/language-models/ngram_lm.ipynb")
+@register("ngram_lm", "04.nlp/language-models/ngram_lm.ipynb")
 def build():
     return [
         md(r"""

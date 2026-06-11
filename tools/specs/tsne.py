@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "tsne"
 
 
-@register("tsne", "ml/dimensionality-reduction/tsne.ipynb")
+@register("tsne", "01.ml/dimensionality-reduction/tsne.ipynb")
 def build():
     return [
         md(r"""

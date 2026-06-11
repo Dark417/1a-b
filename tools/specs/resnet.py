@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "resnet"
 
 
-@register("resnet", "dl/cnn/resnet.ipynb")
+@register("resnet", "02.dl/cnn/resnet.ipynb")
 def build():
     return [
         md(r"""
@@ -31,7 +31,7 @@ $x+F(x)$. The identity shortcut hands every layer a direct gradient highway, so
   are restored.
 - **Projection shortcut:** when a block changes spatial size or channel count, the
   skip uses a $1\times1$ conv so the shapes match before adding.
-- **BatchNorm** keeps activations well-scaled (see `training-techniques/README.md`).
+- **BatchNorm** keeps activations well-scaled (see `06.training-techniques/README.md`).
 """),
         md(r"""
 ## 3. Math — why the residual gradient never vanishes
@@ -122,7 +122,7 @@ plt.tight_layout(); plt.show()
 - **Pitfall — pre/post-activation:** the original block applies ReLU *after* the
   add; "Identity Mappings" (2016) moves BN/ReLU *before* the convs for an even
   cleaner identity path. Both appear in the literature.
-- Related fixes for vanishing gradients live in `training-techniques/README.md`
+- Related fixes for vanishing gradients live in `06.training-techniques/README.md`
   (init, BatchNorm, gated RNN memory).
 """),
     ]

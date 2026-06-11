@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "ica"
 
 
-@register("ica", "ml/dimensionality-reduction/ica.ipynb")
+@register("ica", "01.ml/dimensionality-reduction/ica.ipynb")
 def build():
     return [
         md(r"""

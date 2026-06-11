@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "neural_lm"
 
 
-@register("neural_lm", "nlp/language-models/neural_lm.ipynb")
+@register("neural_lm", "04.nlp/language-models/neural_lm.ipynb")
 def build():
     return [
         md(r"""
@@ -69,7 +69,7 @@ distribution; $T>1$ flattens it (more surprising, more mistakes).
 **Recurrent LM.** The LSTM replaces the fixed window: $h_t=\mathrm{LSTM}(E[w_t],
 h_{t-1})$ and $z_t=W h_t+b$. The same softmax cross-entropy applies at every step;
 because the recurrence is deep in time we **clip gradients** to stop them
-exploding (see [`lstm.ipynb`](../../dl/rnn/lstm.ipynb)).
+exploding (see [`lstm.ipynb`](../../02.dl/rnn/lstm.ipynb)).
 """),
         md("## 4. NumPy implementation — feed-forward LM with manual backprop"),
         show(MOD, "FeedForwardLMNumPy"),
@@ -105,7 +105,7 @@ plt.tight_layout(); plt.show()
 - On a tiny repeated toy text the LSTM can essentially **memorize** it (ppl near
   1) — on real data you must watch for overfitting (held-out perplexity, dropout,
   weight tying).
-- Attention-based LMs ([Transformers](../../transformers/architectures/transformer.ipynb))
+- Attention-based LMs ([Transformers](../../05.transformers/architectures/transformer.ipynb))
   drop recurrence for parallel, long-range context — today's state of the art.
 """),
     ]

@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "mean_shift"
 
 
-@register("mean_shift", "ml/clustering/mean_shift.ipynb")
+@register("mean_shift", "01.ml/clustering/mean_shift.ipynb")
 def build():
     return [
         md(r"""

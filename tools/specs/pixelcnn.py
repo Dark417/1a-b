@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "pixelcnn"
 
 
-@register("pixelcnn", "generative-models/autoregressive/pixelcnn.ipynb")
+@register("pixelcnn", "03.generative-models/autoregressive/pixelcnn.ipynb")
 def build():
     return [
         md(r"""

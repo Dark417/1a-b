@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "stacking"
 
 
-@register("stacking", "ml/ensemble/stacking.ipynb")
+@register("stacking", "01.ml/ensemble/stacking.ipynb")
 def build():
     return [
         md(r"""

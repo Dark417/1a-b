@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "score_based"
 
 
-@register("score_based", "generative-models/diffusion/score_based.ipynb")
+@register("score_based", "03.generative-models/diffusion/score_based.ipynb")
 def build():
     return [
         md(r"""

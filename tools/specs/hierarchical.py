@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "hierarchical"
 
 
-@register("hierarchical", "ml/clustering/hierarchical.ipynb")
+@register("hierarchical", "01.ml/clustering/hierarchical.ipynb")
 def build():
     return [
         md(r"""

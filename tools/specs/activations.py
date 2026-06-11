@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "activations"
 
 
-@register("activations", "dl/mlp/activations.ipynb")
+@register("activations", "02.dl/mlp/activations.ipynb")
 def build():
     return [
         md(r"""
@@ -113,6 +113,6 @@ plt.tight_layout(); plt.show()
 - **Softmax** belongs at the *output*; pair it with cross-entropy so the gradient
   simplifies to $a-y$ (see [`mlp.ipynb`](mlp.ipynb)).
 - Vanishing gradients motivate ReLU/He init, normalization, and residuals — see
-  `training-techniques/README.md`.
+  `06.training-techniques/README.md`.
 """),
     ]

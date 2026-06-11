@@ -3,15 +3,15 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "seq2seq_attention"
 
 
-@register("seq2seq_attention", "nlp/seq2seq/seq2seq_attention.ipynb")
+@register("seq2seq_attention", "04.nlp/seq2seq/seq2seq_attention.ipynb")
 def build():
     return [
         md(r"""
 # Seq2Seq with Attention — Bahdanau & Luong
 
 > Tutorial pair for [`seq2seq_attention.py`](seq2seq_attention.py). Recurrent
-> backbone from [`lstm.ipynb`](../../dl/rnn/lstm.ipynb); the attention idea is
-> generalized in [`attention.ipynb`](../../transformers/attention/attention.ipynb).
+> backbone from [`lstm.ipynb`](../../02.dl/rnn/lstm.ipynb); the attention idea is
+> generalized in [`attention.ipynb`](../../05.transformers/attention/attention.ipynb).
 
 ## 1. Intuition
 An encoder-decoder reads the whole source, crushes it into **one** vector, and the
@@ -76,7 +76,7 @@ Luong-dot is cheaper (no extra parameters).
 prefix $y_{<t}$ with some probability, otherwise its own prediction. High forcing
 speeds early learning but causes *exposure bias* (train/inference mismatch);
 mixing the two is the usual compromise. (See
-[`training-techniques/README.md`](../../training-techniques/README.md).)
+[`06.training-techniques/README.md`](../../06.training-techniques/README.md).)
 """),
         md("## 4. NumPy implementation — the attention scoring math, explicit"),
         show(MOD, "attention_numpy"),
@@ -119,7 +119,7 @@ plt.colorbar(label="attention weight"); plt.tight_layout(); plt.show()
 - Real systems should **mask PAD positions** out of the softmax; with fixed-length
   padding here we keep the padding consistent between training and decoding.
 - Stack attention everywhere and drop the RNN entirely and you get
-  **self-attention / [Transformers](../../transformers/architectures/transformer.ipynb)** —
+  **self-attention / [Transformers](../../05.transformers/architectures/transformer.ipynb)** —
   same scores-softmax-weighted-sum recipe, applied in parallel.
 """),
     ]

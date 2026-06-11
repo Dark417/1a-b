@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "gradient_boosting"
 
 
-@register("gradient_boosting", "ml/trees/gradient_boosting.ipynb")
+@register("gradient_boosting", "01.ml/trees/gradient_boosting.ipynb")
 def build():
     return [
         md(r"""

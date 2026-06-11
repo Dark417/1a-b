@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "pixelrnn"
 
 
-@register("pixelrnn", "generative-models/autoregressive/pixelrnn.ipynb")
+@register("pixelrnn", "03.generative-models/autoregressive/pixelrnn.ipynb")
 def build():
     return [
         md(r"""
@@ -53,7 +53,7 @@ Two design points guarantee the autoregressive property:
 
 The recurrence is exactly an RNN unrolled over $H$ steps, so training uses
 **backpropagation through time** (with gradient clipping, since BPTT can explode --
-the same issue showcased in `dl/rnn/`).
+the same issue showcased in `02.dl/rnn/`).
 
 **Why recurrence over convolution?** A masked conv has a bounded receptive field;
 the LSTM's state can in principle propagate dependencies across the *entire* image
@@ -99,7 +99,7 @@ plt.tight_layout(); plt.show()
   shift wrong and the model trivially copies the target.
 - Recurrence makes both training and sampling sequential -- slower than PixelCNN,
   which is why the field moved toward convolutional / transformer autoregressive
-  models. **BPTT** here needs gradient clipping (cf. `dl/rnn/`).
+  models. **BPTT** here needs gradient clipping (cf. `02.dl/rnn/`).
 - The full paper's **Diagonal BiLSTM** removes the Row-LSTM's blind spot; we
   implement only the simpler Row LSTM.
 """),

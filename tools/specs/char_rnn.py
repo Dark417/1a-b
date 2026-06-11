@@ -3,14 +3,14 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "char_rnn"
 
 
-@register("char_rnn", "nlp/language-models/char_rnn.ipynb")
+@register("char_rnn", "04.nlp/language-models/char_rnn.ipynb")
 def build():
     return [
         md(r"""
 # Character-level RNN — generating text one character at a time
 
 > Tutorial pair for [`char_rnn.py`](char_rnn.py). The recurrent machinery is the
-> vanilla RNN from [`rnn.ipynb`](../../dl/rnn/rnn.ipynb).
+> vanilla RNN from [`rnn.ipynb`](../../02.dl/rnn/rnn.ipynb).
 
 ## 1. Intuition
 Forget words — let the model read and write **single characters**. The vocabulary
@@ -59,9 +59,9 @@ $$\delta W_{hh}=\sum_t \delta a_t\,h_{t-1}^\top,\quad
 **Why clip?** Unrolling multiplies by $W_{hh}^\top$ once per step; if its spectral
 norm $>1$ the gradient blows up exponentially. We **clip** each gradient to
 $[-5,5]$ (and use Adagrad's adaptive step) to keep training stable — the canonical
-RNN training technique (see [`rnn.ipynb`](../../dl/rnn/rnn.ipynb)). LSTMs replace
+RNN training technique (see [`rnn.ipynb`](../../02.dl/rnn/rnn.ipynb)). LSTMs replace
 this fragile path with a gated additive one
-([`lstm.ipynb`](../../dl/rnn/lstm.ipynb)).
+([`lstm.ipynb`](../../02.dl/rnn/lstm.ipynb)).
 
 **Temperature sampling.** To generate, draw $c\sim\operatorname{softmax}(y/T)$.
 Low $T$ -> peaky, repetitive, "safe"; $T=1$ -> the model's own distribution;
@@ -99,8 +99,8 @@ plt.tight_layout(); plt.show()
   model see beyond one chunk.
 - **Temperature** is the single most important generation knob; tune it per use.
 - Vanilla RNNs still struggle with **long-range** dependencies (vanishing
-  gradients) — switch to the [LSTM](../../dl/rnn/lstm.ipynb), or to
-  [Transformers](../../transformers/architectures/transformer.ipynb) for parallel,
+  gradients) — switch to the [LSTM](../../02.dl/rnn/lstm.ipynb), or to
+  [Transformers](../../05.transformers/architectures/transformer.ipynb) for parallel,
   long-context modeling. On a tiny repeated string the LSTM can memorize it (loss
   near 0), which is expected here.
 """),

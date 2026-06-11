@@ -29,7 +29,8 @@ from common.nbgen import md, code, write_notebook  # noqa: E402,F401
 BUILDERS: dict[str, tuple[str, "callable"]] = {}
 
 # Where algorithm modules live (for locating a module's source file).
-_CODE_DIRS = ["ml", "dl", "generative-models", "nlp", "transformers", "common"]
+_CODE_DIRS = ["01.ml", "02.dl", "03.generative-models", "04.nlp",
+              "05.transformers", "common"]
 
 
 def register(name: str, path: str):

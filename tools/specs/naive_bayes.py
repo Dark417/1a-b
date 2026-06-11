@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "naive_bayes"
 
 
-@register("naive_bayes", "ml/naive-bayes/naive_bayes.ipynb")
+@register("naive_bayes", "01.ml/naive-bayes/naive_bayes.ipynb")
 def build():
     return [
         md(r"""

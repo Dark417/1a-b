@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "pix2pix"
 
 
-@register("pix2pix", "generative-models/gan/pix2pix.ipynb")
+@register("pix2pix", "03.generative-models/gan/pix2pix.ipynb")
 def build():
     return [
         md(r"""

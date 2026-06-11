@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "infogan"
 
 
-@register("infogan", "generative-models/gan/infogan.ipynb")
+@register("infogan", "03.generative-models/gan/infogan.ipynb")
 def build():
     return [
         md(r"""

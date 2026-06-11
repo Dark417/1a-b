@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "word2vec"
 
 
-@register("word2vec", "nlp/embeddings/word2vec.ipynb")
+@register("word2vec", "04.nlp/embeddings/word2vec.ipynb")
 def build():
     return [
         md(r"""
@@ -86,6 +86,6 @@ plt.tight_layout(); plt.show()
   practice.
 - Static embeddings give one vector per word — no sense disambiguation. That's
   what **contextual** models (ELMo → BERT) fix, using the
-  [Transformer](../../transformers/architectures/transformer.ipynb).
+  [Transformer](../../05.transformers/architectures/transformer.ipynb).
 """),
     ]

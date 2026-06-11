@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "spectral"
 
 
-@register("spectral", "ml/clustering/spectral.ipynb")
+@register("spectral", "01.ml/clustering/spectral.ipynb")
 def build():
     return [
         md(r"""

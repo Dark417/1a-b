@@ -25,11 +25,11 @@ A **training technique** (e.g. *vanishing gradients*, *gradient clipping*,
 *batch norm*) is **not** a standalone file. It is demonstrated *inside* the
 algorithms where it naturally appears, and the same technique may reappear in
 several algorithms. The cross-reference table lives in
-[`training-techniques/README.md`](training-techniques/README.md).
+[`06.training-techniques/README.md`](06.training-techniques/README.md).
 
 ---
 
-## 1. `ml/` — Classic Machine Learning
+## 1. `01.ml/` — Classic Machine Learning
 
 ### 1.1 `linear-models/`
 - [x] `linear_regression` — OLS, **variants:** Ridge (L2), Lasso (L1), ElasticNet, polynomial features
@@ -78,7 +78,7 @@ several algorithms. The cross-reference table lives in
 
 ---
 
-## 2. `dl/` — Basic Deep Learning
+## 2. `02.dl/` — Basic Deep Learning
 
 ### 2.1 `mlp/`
 - [x] `mlp` — feed-forward net from scratch (backprop), **variants:** depth, width, activations
@@ -108,7 +108,7 @@ several algorithms. The cross-reference table lives in
 
 ---
 
-## 3. `generative-models/`
+## 3. `03.generative-models/`
 
 ### 3.1 `gan/`
 - [x] `vanilla_gan` — minimax game, **focus:** *mode collapse, training instability*
@@ -140,7 +140,7 @@ several algorithms. The cross-reference table lives in
 
 ---
 
-## 4. `nlp/`
+## 4. `04.nlp/`
 
 ### 4.1 `text-representation/`
 - [x] `bow_tfidf` — bag-of-words, TF-IDF
@@ -161,7 +161,7 @@ several algorithms. The cross-reference table lives in
 
 ---
 
-## 5. `transformers/`
+## 5. `05.transformers/`
 
 ### 5.1 `attention/`
 - [x] `attention` — scaled dot-product, **variants:** multi-head, self vs cross, causal mask
@@ -176,24 +176,24 @@ several algorithms. The cross-reference table lives in
 
 ---
 
-## 6. `training-techniques/` (cross-cutting reference)
+## 6. `06.training-techniques/` (cross-cutting reference)
 
 These are demonstrated *inside* algorithms above. The table below records the
 canonical "home" demo and other places the technique reappears.
 
 | Technique | Canonical demo | Also appears in |
 |---|---|---|
-| Vanishing / exploding gradients | `dl/rnn/rnn` | `dl/rnn/lstm`, `dl/cnn/resnet`, `dl/mlp/mlp` |
-| Gradient clipping | `dl/rnn/rnn` | `transformers/architectures/transformer` |
-| Weight initialization (Xavier/He) | `dl/mlp/mlp` | every DL model |
-| Batch / Layer normalization | `dl/regularization/regularization` | `dl/cnn/resnet`, `transformers/architectures/transformer` |
-| Dropout | `dl/regularization/regularization` | `dl/mlp/mlp`, `transformers/architectures/transformer` |
-| Skip / residual connections | `dl/cnn/resnet` | `transformers/architectures/transformer` |
-| Learning-rate scheduling / warmup | `transformers/architectures/transformer` | `dl/optimizers/optimizers` |
-| Reparameterization trick | `generative-models/vae/vae` | diffusion |
-| Adversarial / minimax training | `generative-models/gan/vanilla_gan` | all GAN variants |
-| Negative sampling | `nlp/embeddings/word2vec` | — |
-| Teacher forcing | `nlp/seq2seq/seq2seq_attention` | `dl/rnn/lstm` |
+| Vanishing / exploding gradients | `02.dl/rnn/rnn` | `02.dl/rnn/lstm`, `02.dl/cnn/resnet`, `02.dl/mlp/mlp` |
+| Gradient clipping | `02.dl/rnn/rnn` | `05.transformers/architectures/transformer` |
+| Weight initialization (Xavier/He) | `02.dl/mlp/mlp` | every DL model |
+| Batch / Layer normalization | `02.dl/regularization/regularization` | `02.dl/cnn/resnet`, `05.transformers/architectures/transformer` |
+| Dropout | `02.dl/regularization/regularization` | `02.dl/mlp/mlp`, `05.transformers/architectures/transformer` |
+| Skip / residual connections | `02.dl/cnn/resnet` | `05.transformers/architectures/transformer` |
+| Learning-rate scheduling / warmup | `05.transformers/architectures/transformer` | `02.dl/optimizers/optimizers` |
+| Reparameterization trick | `03.generative-models/vae/vae` | diffusion |
+| Adversarial / minimax training | `03.generative-models/gan/vanilla_gan` | all GAN variants |
+| Negative sampling | `04.nlp/embeddings/word2vec` | — |
+| Teacher forcing | `04.nlp/seq2seq/seq2seq_attention` | `02.dl/rnn/lstm` |
 
-See [`training-techniques/README.md`](training-techniques/README.md) for the
+See [`06.training-techniques/README.md`](06.training-techniques/README.md) for the
 detailed write-up of each technique.

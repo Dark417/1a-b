@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "realnvp"
 
 
-@register("realnvp", "generative-models/normalizing-flows/realnvp.ipynb")
+@register("realnvp", "03.generative-models/normalizing-flows/realnvp.ipynb")
 def build():
     return [
         md(r"""

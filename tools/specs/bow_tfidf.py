@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "bow_tfidf"
 
 
-@register("bow_tfidf", "nlp/text-representation/bow_tfidf.ipynb")
+@register("bow_tfidf", "04.nlp/text-representation/bow_tfidf.ipynb")
 def build():
     return [
         md(r"""

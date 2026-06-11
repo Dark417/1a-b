@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "transformer"
 
 
-@register("transformer", "transformers/architectures/transformer.ipynb")
+@register("transformer", "05.transformers/architectures/transformer.ipynb")
 def build():
     return [
         md(r"""
@@ -55,7 +55,7 @@ true $y_{<t}$ in parallel and predict all $y_t$ at once.
 $$\text{lr}(t)=d_{\text{model}}^{-1/2}\cdot\min\!\big(t^{-1/2},\, t\cdot t_{\text{warmup}}^{-3/2}\big).$$
 It rises linearly for `warmup` steps then decays as $t^{-1/2}$. Warmup prevents
 huge early updates from destabilizing the freshly-initialized attention; the decay
-anneals to a good minimum. (See `training-techniques/README.md`.)
+anneals to a good minimum. (See `06.training-techniques/README.md`.)
 """),
         md("## 4. NumPy — positional encoding (the closed-form bit)"),
         show(MOD, "positional_encoding"),

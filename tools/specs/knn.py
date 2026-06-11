@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "knn"
 
 
-@register("knn", "ml/knn/knn.ipynb")
+@register("knn", "01.ml/knn/knn.ipynb")
 def build():
     return [
         md(r"""

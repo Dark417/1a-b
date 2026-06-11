@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "glow"
 
 
-@register("glow", "generative-models/normalizing-flows/glow.ipynb")
+@register("glow", "03.generative-models/normalizing-flows/glow.ipynb")
 def build():
     return [
         md(r"""

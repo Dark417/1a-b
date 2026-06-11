@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "vq_vae"
 
 
-@register("vq_vae", "generative-models/vae/vq_vae.ipynb")
+@register("vq_vae", "03.generative-models/vae/vq_vae.ipynb")
 def build():
     return [
         md(r"""

@@ -21,20 +21,20 @@ like the essence of a good course condensed into runnable code.
   AI). Read this before adding anything.
 - 🖥️ **[`docs/gpu-setup.md`](docs/gpu-setup.md)** — CUDA / Apple-MPS / Colab
   setup (everything also runs on CPU).
-- 🏋️ **[`training-techniques/README.md`](training-techniques/README.md)** — the
+- 🏋️ **[`06.training-techniques/README.md`](06.training-techniques/README.md)** — the
   cross-cutting tricks, and which algorithms demonstrate them.
 
 ## Repository structure
 
 ```
-ml/                  Classic ML: linear models, SVM, trees, kNN,
+01.ml/                  Classic ML: linear models, SVM, trees, kNN,
                      naive Bayes, clustering, dimensionality reduction
-dl/                  Basic deep learning: MLP, optimizers, regularization,
+02.dl/                  Basic deep learning: MLP, optimizers, regularization,
                      CNNs, RNN/LSTM/GRU, autoencoders
-generative-models/   GANs, VAEs, diffusion, autoregressive, normalizing flows
-nlp/                 Text representation, embeddings, language models, seq2seq
-transformers/        Attention, the Transformer, BERT, GPT, ViT
-training-techniques/ Cross-cutting techniques referenced throughout
+03.generative-models/   GANs, VAEs, diffusion, autoregressive, normalizing flows
+04.nlp/                 Text representation, embeddings, language models, seq2seq
+05.transformers/        Attention, the Transformer, BERT, GPT, ViT
+06.training-techniques/ Cross-cutting techniques referenced throughout
 common/              Shared template + small utilities
 docs/                Setup and reference docs
 ```
@@ -42,8 +42,8 @@ docs/                Setup and reference docs
 Each leaf holds an algorithm as a pair of files:
 
 ```
-ml/clustering/kmeans.py      # NumPy + PyTorch implementations + demo
-ml/clustering/kmeans.ipynb   # concept + math derivation + the same code
+01.ml/clustering/kmeans.py      # NumPy + PyTorch implementations + demo
+01.ml/clustering/kmeans.ipynb   # concept + math derivation + the same code
 ```
 
 ## How each algorithm is taught
@@ -64,11 +64,11 @@ ml/clustering/kmeans.ipynb   # concept + math derivation + the same code
 pip install -r requirements.txt
 
 # 2. Run any algorithm module directly
-python ml/linear-models/linear_regression.py
-python transformers/architectures/transformer.py
+python 01.ml/linear-models/linear_regression.py
+python 05.transformers/architectures/transformer.py
 
 # 3. Or open the matching notebook for the full explanation
-jupyter lab ml/linear-models/linear_regression.ipynb
+jupyter lab 01.ml/linear-models/linear_regression.ipynb
 ```
 
 For GPU acceleration (optional), see [`docs/gpu-setup.md`](docs/gpu-setup.md).

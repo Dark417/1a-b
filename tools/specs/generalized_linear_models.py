@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "generalized_linear_models"
 
 
-@register("generalized_linear_models", "ml/linear-models/generalized_linear_models.ipynb")
+@register("generalized_linear_models", "01.ml/linear-models/generalized_linear_models.ipynb")
 def build():
     return [
         md(r"""

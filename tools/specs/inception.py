@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "inception"
 
 
-@register("inception", "dl/cnn/inception.ipynb")
+@register("inception", "02.dl/cnn/inception.ipynb")
 def build():
     return [
         md(r"""

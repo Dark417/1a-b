@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "svd"
 
 
-@register("svd", "ml/dimensionality-reduction/svd.ipynb")
+@register("svd", "01.ml/dimensionality-reduction/svd.ipynb")
 def build():
     return [
         md(r"""

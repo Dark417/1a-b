@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "perceptron"
 
 
-@register("perceptron", "ml/perceptron/perceptron.ipynb")
+@register("perceptron", "01.ml/perceptron/perceptron.ipynb")
 def build():
     return [
         md(r"""
@@ -82,6 +82,6 @@ plt.tight_layout(); plt.show()
 - Guaranteed convergence **iff** linearly separable; otherwise use pocket/averaged.
 - It outputs a hard label, no probability → logistic regression softens it; SVM
   maximizes the margin instead of just *a* separating line.
-- XOR ⇒ we need depth → **[MLP](../../dl/mlp/mlp.ipynb)**.
+- XOR ⇒ we need depth → **[MLP](../../02.dl/mlp/mlp.ipynb)**.
 """),
     ]

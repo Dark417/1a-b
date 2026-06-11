@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "kmeans"
 
 
-@register("kmeans", "ml/clustering/kmeans.ipynb")
+@register("kmeans", "01.ml/clustering/kmeans.ipynb")
 def build():
     return [
         md(r"""

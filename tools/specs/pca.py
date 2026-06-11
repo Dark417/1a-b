@@ -3,7 +3,7 @@ from tools.nbreg import register, md, code, show, run_demo
 MOD = "pca"
 
 
-@register("pca", "ml/dimensionality-reduction/pca.ipynb")
+@register("pca", "01.ml/dimensionality-reduction/pca.ipynb")
 def build():
     return [
         md(r"""
