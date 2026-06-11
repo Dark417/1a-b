@@ -1,0 +1,10 @@
+# The mini coding agent's OFFLINE path (MockBackend, tools, permissions,
+# context, MCP client/server, demo) uses ONLY the Python standard library.
+# Nothing here is required to run `python demo.py`.
+#
+# Optional, only for the real-backend paths:
+#   anthropic>=0.40    # AnthropicBackend — real Claude via the Messages API
+#                      # (also needs ANTHROPIC_API_KEY in the environment)
+#
+# The OllamaBackend talks to a local Ollama server over plain HTTP using
+# urllib from the stdlib, so it needs no extra package — just a running Ollama.
