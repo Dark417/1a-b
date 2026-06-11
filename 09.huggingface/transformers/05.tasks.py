@@ -1,23 +1,20 @@
 """
 05.tasks.py — End-to-End Task Examples
 =======================================
-This module walks through 6 NLP tasks end-to-end:
-  1. Text Classification (sentiment)
-  2. Named Entity Recognition
-  3. Extractive Question Answering
-  4. Summarization (seq2seq)
-  5. Causal Language Model generation
-  6. Feature extraction / semantic similarity
-
-Each example shows: raw text → tokenize → forward → decode/interpret output.
+Concrete worked examples for five major NLP tasks using tiny models.
+Each section shows: input → model → decode → human-readable output.
 
 Official docs:
-  - https://huggingface.co/docs/transformers/task_summary
-  - https://huggingface.co/docs/transformers/tasks/sequence_classification
+  https://huggingface.co/docs/transformers/tasks/sequence_classification
+  https://huggingface.co/docs/transformers/tasks/token_classification
+  https://huggingface.co/docs/transformers/tasks/question_answering
+  https://huggingface.co/docs/transformers/tasks/summarization
+  https://huggingface.co/docs/transformers/tasks/language_modeling
 
-Tiny models used:
-  prajjwal1/bert-tiny, sshleifer/tiny-gpt2,
-  hf-internal-testing/tiny-random-t5
+Tiny models:
+  prajjwal1/bert-tiny   — encoder (classification, NER, QA)
+  sshleifer/tiny-gpt2   — decoder (generation)
+  hf-internal-testing/tiny-random-t5 — seq2seq (summarization)
 """
 
 import sys, os
@@ -27,9 +24,9 @@ from _lib import safe, banner, note_skip
 import torch
 torch.set_num_threads(1)
 torch.manual_seed(0)
-import numpy as np
-np.random.seed(0)
 
+import torch.nn as nn
+import torch.nn.functional as F
 from transformers import (
     AutoTokenizer, AutoModel,
     AutoModelForSequenceClassification,
@@ -37,16 +34,19 @@ from transformers import (
     AutoModelForQuestionAnswering,
     AutoModelForSeq2SeqLM,
     AutoModelForCausalLM,
-    BertConfig, BertModel, BertForSequenceClassification,
+    BertConfig, BertForSequenceClassification,
+    BertForTokenClassification,
+    BertForQuestionAnswering,
+    GPT2Config, GPT2LMHeadModel,
+    T5Config, T5ForConditionalGeneration,
 )
 
-# ─── Task 1: Text Classification (Sentiment) ─────────────────────────────────
+# ─── Task 1: Text Classification ─────────────────────────────────────────────
 banner("Task 1: Text Classification (Sentiment Analysis)")
-# Input: raw text string
-# Output: label + confidence score
-# Architecture: BERT encoder → [CLS] → linear head → softmax
+# Model: BERT-based with a linear head on the [CLS] token
+# Input: text string → Output: predicted class + confidence
 
-ok_tok, tok = safe(AutoTokenizer.from_pretrained, "prajjwal1/bert-tiny")
+ok_tok, tok1 = safe(AutoTokenizer.from_pretrained, "prajjwal1/bert-tiny")
 ok_mdl, clf = safe(
     AutoModelForSequenceClassification.from_pretrained,
     "prajjwal1/bert-tiny",
@@ -56,128 +56,147 @@ ok_mdl, clf = safe(
 
 if ok_tok and ok_mdl:
     clf.eval()
-    texts = [
-        "I absolutely love this product, it exceeded my expectations!",
-        "Terrible experience. The service was awful and rude.",
-        "The package arrived on time.",
-    ]
     id2label = {0: "NEGATIVE", 1: "POSITIVE"}
-    for text in texts:
-        enc = tok(text, return_tensors="pt", truncation=True, max_length=64)
+    samples = [
+        "This is a wonderful movie!",
+        "The product broke after one day.",
+        "Average experience, nothing special.",
+    ]
+    for text in samples:
+        inputs = tok1(text, return_tensors="pt", truncation=True, max_length=64)
         with torch.no_grad():
-            logits = clf(**enc).logits            # (1, 2)
-        probs = torch.softmax(logits, dim=-1)[0]  # (2,)
+            logits = clf(**inputs).logits
+        probs = F.softmax(logits, dim=-1)[0]
         pred_id = probs.argmax().item()
-        print(f"  {probs[pred_id]:.3f} {id2label[pred_id]:8}  |  {text[:55]}")
+        print(f"  {text!r}")
+        print(f"    → {id2label[pred_id]} (conf={probs[pred_id]:.3f})")
 else:
-    note_skip(f"tok={ok_tok} clf={ok_mdl}")
-    # Fallback: show the decode steps with random logits
+    note_skip(f"clf: tok={ok_tok}, mdl={ok_mdl}")
+    # Fallback: local model with random weights
     cfg = BertConfig(hidden_size=64, num_hidden_layers=2, num_attention_heads=2,
                      intermediate_size=128, vocab_size=1000, num_labels=2)
-    fb_clf = BertForSequenceClassification(cfg)
-    fb_clf.eval()
-    dummy = {"input_ids": torch.randint(0, 1000, (1, 8)),
+    clf_fb = BertForSequenceClassification(cfg)
+    clf_fb.eval()
+    dummy = {"input_ids": torch.randint(1, 1000, (1, 8)),
              "attention_mask": torch.ones(1, 8, dtype=torch.long)}
     with torch.no_grad():
-        logits = fb_clf(**dummy).logits
-    probs = torch.softmax(logits, dim=-1)
-    print(f"  [fallback] logits={logits}  probs={probs}")
-    print("  Shape: (batch=1, num_labels=2); argmax → predicted class")
+        out = clf_fb(**dummy)
+    probs = F.softmax(out.logits, dim=-1)[0]
+    print(f"  [fallback] logits={out.logits}, pred={probs.argmax().item()}")
 
-# ─── Task 2: Named Entity Recognition (token classification) ─────────────────
+# ─── Task 2: Named Entity Recognition (Token Classification) ──────────────────
 banner("Task 2: Named Entity Recognition (Token Classification)")
-# Input: sentence
-# Output: per-token label (B-ORG, I-PER, O, …)
-# Architecture: BERT → per-token linear head (no softmax pooling)
+# Model: BERT with a linear head PER TOKEN
+# Input: text → Output: per-token label (B-PER, I-PER, O, B-ORG, etc.)
+# id2label maps integer class index → BIO tag string
 
 ok_tok, tok2 = safe(AutoTokenizer.from_pretrained, "prajjwal1/bert-tiny")
-ok_mdl, ner_model = safe(
+ok_mdl, ner = safe(
     AutoModelForTokenClassification.from_pretrained,
     "prajjwal1/bert-tiny",
-    num_labels=9,                     # IOB2 tags: O, B-PER, I-PER, B-ORG, …
+    num_labels=9,                 # typical NER: O B-PER I-PER B-ORG I-ORG B-LOC I-LOC B-MISC I-MISC
     ignore_mismatched_sizes=True,
 )
 
 if ok_tok and ok_mdl:
-    ner_model.eval()
-    ner_text = "Hugging Face was founded in New York by researchers."
-    enc = tok2(ner_text, return_tensors="pt")
-    tokens = tok2.convert_ids_to_tokens(enc["input_ids"][0])
+    ner.eval()
+    id2label_ner = {
+        0: "O", 1: "B-PER", 2: "I-PER", 3: "B-ORG",
+        4: "I-ORG", 5: "B-LOC", 6: "I-LOC", 7: "B-MISC", 8: "I-MISC",
+    }
+    text = "Albert Einstein was born in Ulm, Germany."
+    inputs = tok2(text, return_tensors="pt", truncation=True, max_length=64)
+    tokens = tok2.convert_ids_to_tokens(inputs["input_ids"][0].tolist())
+
     with torch.no_grad():
-        logits = ner_model(**enc).logits    # (1, seq_len, num_labels)
-    preds = logits[0].argmax(dim=-1)        # (seq_len,)
-    # IOB2 label set (illustrative)
-    ner_labels = ["O", "B-PER", "I-PER", "B-ORG", "I-ORG",
-                  "B-LOC", "I-LOC", "B-MISC", "I-MISC"]
-    print(f"  {'Token':20} {'Label':10}")
+        logits = ner(**inputs).logits          # (1, seq_len, num_labels)
+
+    preds = logits[0].argmax(dim=-1).tolist()
+    print(f"  Text: {text!r}")
+    print(f"  {'Token':20} {'Pred':10}")
     print(f"  {'-'*30}")
-    for tok_str, pred_id in zip(tokens, preds.tolist()):
-        label = ner_labels[pred_id] if pred_id < len(ner_labels) else f"LABEL_{pred_id}"
-        if tok_str not in ("[CLS]", "[SEP]", "<s>", "</s>"):
-            print(f"  {tok_str:20} {label}")
+    for token, pred_id in zip(tokens, preds):
+        print(f"  {token:20} {id2label_ner[pred_id]}")
 else:
-    note_skip(f"NER failed: tok={ok_tok}")
-    print("  API shape: logits (batch, seq_len, num_labels)")
-    print("  Each token gets a label → decode with id2label mapping")
+    note_skip(f"ner: tok={ok_tok}, mdl={ok_mdl}")
+    cfg = BertConfig(hidden_size=64, num_hidden_layers=2, num_attention_heads=2,
+                     intermediate_size=128, vocab_size=1000, num_labels=9)
+    ner_fb = BertForTokenClassification(cfg)
+    ner_fb.eval()
+    dummy = {"input_ids": torch.randint(1, 1000, (1, 8)),
+             "attention_mask": torch.ones(1, 8, dtype=torch.long)}
+    with torch.no_grad():
+        out = ner_fb(**dummy)
+    preds = out.logits[0].argmax(dim=-1).tolist()
+    print(f"  [fallback] per-token preds: {preds}")
 
 # ─── Task 3: Extractive Question Answering ────────────────────────────────────
 banner("Task 3: Extractive Question Answering")
-# Input: question + context passage
-# Output: start_idx, end_idx into context → extracted span
-# Architecture: BERT → two linear heads (start_logits, end_logits)
+# Model: BERT with two heads — one for start position, one for end position
+# Input: (question, context) → Output: text span from context
 
 ok_tok, tok3 = safe(AutoTokenizer.from_pretrained, "prajjwal1/bert-tiny")
 ok_mdl, qa_model = safe(
     AutoModelForQuestionAnswering.from_pretrained,
     "prajjwal1/bert-tiny",
+    ignore_mismatched_sizes=True,
 )
-
-qa_pairs = [
-    {
-        "question": "When was the Eiffel Tower built?",
-        "context": "The Eiffel Tower was built from 1887 to 1889 in Paris, France.",
-    },
-    {
-        "question": "Who wrote the Transformer paper?",
-        "context": "The paper 'Attention is All You Need' was written by Vaswani et al. in 2017.",
-    },
-]
 
 if ok_tok and ok_mdl:
     qa_model.eval()
+
+    qa_pairs = [
+        {
+            "question": "What is the capital of France?",
+            "context": "France is a country in Western Europe. Paris is its capital city.",
+        },
+        {
+            "question": "Who wrote the Transformers paper?",
+            "context": "The paper 'Attention Is All You Need' was written by Vaswani et al. in 2017.",
+        },
+    ]
+
     for pair in qa_pairs:
-        enc = tok3(
+        inputs = tok3(
             pair["question"], pair["context"],
-            return_tensors="pt",
-            truncation="only_second",
-            max_length=128,
+            return_tensors="pt", truncation=True, max_length=128,
         )
         with torch.no_grad():
-            out = qa_model(**enc)
+            out = qa_model(**inputs)
+
+        # start/end positions are relative to the flat input_ids tensor
         start = out.start_logits.argmax().item()
-        end = out.end_logits.argmax().item() + 1
-        # Decode the span; handle degenerate cases
-        if end > start:
-            answer_ids = enc["input_ids"][0][start:end]
-            answer = tok3.decode(answer_ids, skip_special_tokens=True)
-        else:
-            answer = "(no valid span)"
+        end = out.end_logits.argmax().item()
+
+        # Ensure start <= end
+        if end < start:
+            end = start
+
+        answer_ids = inputs["input_ids"][0, start: end + 1]
+        answer = tok3.decode(answer_ids, skip_special_tokens=True)
+
         print(f"  Q: {pair['question']}")
-        print(f"  A: {answer!r}  (span [{start}:{end}])")
+        print(f"  A: {answer!r}  (span [{start}:{end+1}])")
         print()
 else:
-    note_skip(f"QA failed: tok={ok_tok}")
-    print("  API shape:")
-    print("    out.start_logits: (1, seq_len)")
-    print("    out.end_logits  : (1, seq_len)")
-    print("    answer = decode(input_ids[start:end+1])")
+    note_skip(f"qa: tok={ok_tok}, mdl={ok_mdl}")
+    cfg = BertConfig(hidden_size=64, num_hidden_layers=2, num_attention_heads=2,
+                     intermediate_size=128, vocab_size=1000)
+    qa_fb = BertForQuestionAnswering(cfg)
+    qa_fb.eval()
+    dummy = {"input_ids": torch.randint(1, 1000, (1, 12)),
+             "attention_mask": torch.ones(1, 12, dtype=torch.long)}
+    with torch.no_grad():
+        out = qa_fb(**dummy)
+    start = out.start_logits.argmax().item()
+    end = out.end_logits.argmax().item()
+    print(f"  [fallback] start={start}, end={end}")
 
-# ─── Task 4: Summarization (Seq2Seq) ─────────────────────────────────────────
+# ─── Task 4: Summarization ────────────────────────────────────────────────────
 banner("Task 4: Summarization (Seq2Seq)")
-# Input: long document
-# Output: shorter summary
-# Architecture: T5/BART encoder processes doc → decoder generates summary
-# model.generate() handles the autoregressive loop
+# Model: encoder-decoder (T5)
+# Input: long text → Output: compressed summary
+# T5 uses a "task prefix": "summarize: ..."
 
 ok_tok, tok4 = safe(AutoTokenizer.from_pretrained, "hf-internal-testing/tiny-random-t5")
 ok_mdl, t5 = safe(AutoModelForSeq2SeqLM.from_pretrained, "hf-internal-testing/tiny-random-t5")
@@ -185,36 +204,42 @@ ok_mdl, t5 = safe(AutoModelForSeq2SeqLM.from_pretrained, "hf-internal-testing/ti
 if ok_tok and ok_mdl:
     t5.eval()
     article = (
-        "Researchers at MIT have developed a new neural network architecture "
-        "that significantly reduces training time. The model uses a novel "
-        "attention mechanism that scales linearly with sequence length. "
-        "Experiments show 3x speedup on standard NLP benchmarks."
+        "summarize: The transformer architecture was introduced in the paper "
+        "'Attention Is All You Need' by Vaswani et al. in 2017. "
+        "It replaced recurrent networks with self-attention mechanisms, "
+        "enabling parallelization and better long-range dependencies. "
+        "The architecture has since become foundational for NLP, vision, and beyond."
     )
-    # T5 expects task prefix: "summarize: <text>"
-    enc = tok4("summarize: " + article, return_tensors="pt",
-               truncation=True, max_length=128)
+    inputs = tok4(article, return_tensors="pt", truncation=True, max_length=128)
     with torch.no_grad():
-        gen_ids = t5.generate(
-            **enc,
+        summary_ids = t5.generate(
+            **inputs,
             max_new_tokens=30,
+            min_length=5,
             num_beams=2,
             early_stopping=True,
         )
-    summary = tok4.decode(gen_ids[0], skip_special_tokens=True)
-    print(f"  Input  ({len(article)} chars): {article[:80]}…")
+    summary = tok4.decode(summary_ids[0], skip_special_tokens=True)
+    print(f"  Input length  : {inputs['input_ids'].shape[1]} tokens")
+    print(f"  Output length : {summary_ids.shape[1]} tokens")
     print(f"  Summary: {summary!r}")
-    print(f"  Token compression: {enc['input_ids'].shape[1]} → {gen_ids.shape[1]} tokens")
 else:
-    note_skip(f"T5 failed: tok={ok_tok}")
-    print("  API shape:")
-    print("    gen_ids = model.generate(**enc, max_new_tokens=30)")
-    print("    summary = tokenizer.decode(gen_ids[0], skip_special_tokens=True)")
+    note_skip(f"t5: tok={ok_tok}, mdl={ok_mdl}")
+    cfg = T5Config(d_model=64, d_ff=128, num_heads=2, num_layers=2,
+                   d_kv=32, vocab_size=1000)
+    t5_fb = T5ForConditionalGeneration(cfg)
+    t5_fb.eval()
+    enc_ids = torch.randint(1, 1000, (1, 20))
+    with torch.no_grad():
+        out = t5_fb.generate(input_ids=enc_ids, max_new_tokens=10,
+                             decoder_start_token_id=0)
+    print(f"  [fallback] generated ids shape: {out.shape}")
 
-# ─── Task 5: Causal Language Model (Text Generation) ────────────────────────
-banner("Task 5: Causal Language Model (Text Generation)")
-# Input: prompt text
-# Output: prompt + model continuation
-# Architecture: GPT-style decoder-only
+# ─── Task 5: Text Generation ─────────────────────────────────────────────────
+banner("Task 5: Text Generation (Causal LM)")
+# Model: GPT-2 decoder-only
+# Input: prompt → Output: continuation
+# The model autoregressively predicts the next token given all previous tokens.
 
 ok_tok, tok5 = safe(AutoTokenizer.from_pretrained, "sshleifer/tiny-gpt2")
 ok_mdl, gpt = safe(AutoModelForCausalLM.from_pretrained, "sshleifer/tiny-gpt2")
@@ -222,81 +247,40 @@ ok_mdl, gpt = safe(AutoModelForCausalLM.from_pretrained, "sshleifer/tiny-gpt2")
 if ok_tok and ok_mdl:
     tok5.pad_token = tok5.eos_token
     gpt.eval()
+
     prompts = [
-        "The key to understanding deep learning is",
-        "In the year 2050, robots will",
+        "The history of machine learning",
+        "In the beginning, there was",
+        "Scientists discovered that",
     ]
     for prompt in prompts:
-        enc = tok5(prompt, return_tensors="pt")
-        n_prompt = enc["input_ids"].shape[1]
+        inputs = tok5(prompt, return_tensors="pt")
         torch.manual_seed(42)
         with torch.no_grad():
-            out = gpt.generate(
-                **enc,
+            gen_ids = gpt.generate(
+                **inputs,
                 max_new_tokens=20,
                 do_sample=True,
-                temperature=0.8,
-                top_p=0.9,
+                temperature=0.9,
+                top_k=40,
                 pad_token_id=tok5.eos_token_id,
             )
-        # Decode only the new tokens
-        new_ids = out[0, n_prompt:]
-        continuation = tok5.decode(new_ids, skip_special_tokens=True)
-        full_text = tok5.decode(out[0], skip_special_tokens=True)
-        print(f"  Prompt:  {prompt!r}")
-        print(f"  New:     {continuation!r}")
-        print(f"  Full:    {full_text!r}")
+        full_text = tok5.decode(gen_ids[0], skip_special_tokens=True)
+        continuation = full_text[len(prompt):]
+        print(f"  Prompt     : {prompt!r}")
+        print(f"  Continuation: {continuation!r}")
         print()
 else:
-    note_skip(f"GPT-2 failed: tok={ok_tok}")
-    print("  API shape:")
-    print("    out = model.generate(**enc, max_new_tokens=20, do_sample=True)")
-    print("    text = tokenizer.decode(out[0], skip_special_tokens=True)")
-
-# ─── Task 6: Feature Extraction & Semantic Similarity ────────────────────────
-banner("Task 6: Feature Extraction & Semantic Similarity")
-# Input: two sentences
-# Output: cosine similarity of their embeddings
-# Architecture: BERT encoder → mean-pool hidden states
-
-ok_tok, tok6 = safe(AutoTokenizer.from_pretrained, "prajjwal1/bert-tiny")
-ok_mdl, enc_model = safe(AutoModel.from_pretrained, "prajjwal1/bert-tiny")
-
-def mean_pool(model_output, attention_mask):
-    """Masked mean-pool over token dimension."""
-    hs = model_output.last_hidden_state          # (B, L, H)
-    mask = attention_mask.unsqueeze(-1).float()  # (B, L, 1)
-    return (hs * mask).sum(1) / mask.sum(1)      # (B, H)
-
-sentence_pairs = [
-    ("A dog is playing in the park.", "A puppy is running outside."),
-    ("The stock market rose sharply today.", "Scientists discovered a new planet."),
-]
-
-if ok_tok and ok_mdl:
-    enc_model.eval()
-    print(f"  {'Sentence A':45} | {'Sentence B':45} | Cosine")
-    print(f"  {'-'*100}")
-    for sent_a, sent_b in sentence_pairs:
-        def encode(text):
-            inputs = tok6(text, return_tensors="pt",
-                          padding=True, truncation=True, max_length=64)
-            with torch.no_grad():
-                out = enc_model(**inputs)
-            emb = mean_pool(out, inputs["attention_mask"])
-            return torch.nn.functional.normalize(emb, dim=-1)  # unit vector
-
-        emb_a = encode(sent_a)
-        emb_b = encode(sent_b)
-        cos = (emb_a * emb_b).sum().item()
-        print(f"  {sent_a[:44]:45} | {sent_b[:44]:45} | {cos:.4f}")
-else:
-    note_skip("feature extraction failed")
-    # Fallback: demonstrate with random unit vectors
-    a = torch.nn.functional.normalize(torch.randn(1, 128), dim=-1)
-    b = torch.nn.functional.normalize(torch.randn(1, 128), dim=-1)
-    cos = (a * b).sum().item()
-    print(f"  [fallback] random unit vector cosine similarity: {cos:.4f}")
-    print("  Real usage: encode sentences, compute cosine similarity")
+    note_skip(f"gpt: tok={ok_tok}, mdl={ok_mdl}")
+    cfg = GPT2Config(n_embd=64, n_head=2, n_layer=2, vocab_size=1000,
+                     n_positions=64, n_ctx=64)
+    gpt_fb = GPT2LMHeadModel(cfg)
+    gpt_fb.eval()
+    dummy = torch.randint(1, 1000, (1, 5))
+    torch.manual_seed(42)
+    with torch.no_grad():
+        out = gpt_fb.generate(dummy, max_new_tokens=10, do_sample=True,
+                              pad_token_id=0)
+    print(f"  [fallback] generated shape: {out.shape}, ids: {out[0].tolist()}")
 
 print("\n[DONE] 05.tasks.py complete")
