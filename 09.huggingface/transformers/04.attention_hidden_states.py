@@ -26,7 +26,13 @@ from transformers import AutoTokenizer, AutoModel, BertConfig, BertModel
 banner("Loading bert-tiny")
 
 ok_tok, tok = safe(AutoTokenizer.from_pretrained, "prajjwal1/bert-tiny")
-ok_mdl, model = safe(AutoModel.from_pretrained, "prajjwal1/bert-tiny")
+# attn_implementation="eager" is required for output_attentions=True in newer transformers
+# (the default "sdpa" backend drops attention weights for efficiency)
+ok_mdl, model = safe(
+    AutoModel.from_pretrained,
+    "prajjwal1/bert-tiny",
+    attn_implementation="eager",
+)
 
 LIVE = ok_tok and ok_mdl
 
@@ -41,10 +47,10 @@ if LIVE:
     print(f"  Input tokens: {tok.convert_ids_to_tokens(inputs['input_ids'][0].tolist())}")
 else:
     note_skip(str(model if not ok_mdl else tok))
-    # Build from scratch
+    # Build from scratch — also use eager attention for output_attentions support
     cfg = BertConfig(hidden_size=64, num_hidden_layers=2, num_attention_heads=2,
                      intermediate_size=128, vocab_size=1000)
-    model = BertModel(cfg)
+    model = BertModel(cfg, add_pooling_layer=True)
     model.eval()
     NUM_LAYERS = cfg.num_hidden_layers
     NUM_HEADS = cfg.num_attention_heads
