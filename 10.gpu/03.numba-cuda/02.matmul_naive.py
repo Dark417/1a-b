@@ -14,7 +14,12 @@ times. The arithmetic intensity is low: ~2 FLOPs per 2 loads. The next file
 (`03.matmul_tiled.py`) fixes this with shared memory.
 
 This still teaches three core skills:
-  - 2-D indexing: `row, col = cuda.grid(2)`.
+  - 2-D indexing: `row = blockIdx.y*blockDim.y + threadIdx.y` (and likewise for
+    col). On real hardware the shorthand `row, col = cuda.grid(2)` is identical;
+    we spell it out here because the CUDA *simulator* used on this CPU-only
+    machine (`NUMBA_ENABLE_CUDASIM=1`) has a bug in `cuda.grid(2)` for the
+    boundary block — the explicit form is always correct and is what `cuda.grid`
+    expands to anyway. See the README's "CUDASIM gotchas" note.
   - Mapping a 2-D problem onto a 2-D launch config.
   - Accumulating into a register (`acc`) before a single global write — writing
     to a local variable in a loop, then storing once, avoids K global writes.
@@ -35,7 +40,9 @@ from numba import cuda
 
 @cuda.jit
 def matmul_naive_kernel(a, b, c):
-    row, col = cuda.grid(2)            # 2-D global thread index
+    # 2-D global thread index (== cuda.grid(2) on real hardware).
+    row = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
+    col = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
     m, k = a.shape
     _, n = b.shape
     if row < m and col < n:
@@ -50,7 +57,7 @@ def matmul(a, b, block=(16, 16)):
     _, n = b.shape
     d_a = cuda.to_device(a)
     d_b = cuda.to_device(b)
-    d_c = cuda.device_array((m, n), dtype=np.float32)
+    d_c = cuda.to_device(np.zeros((m, n), dtype=np.float32))
 
     # grid is sized in (x=cols, y=rows) so it tiles the whole C matrix.
     grid = ((n + block[0] - 1) // block[0],

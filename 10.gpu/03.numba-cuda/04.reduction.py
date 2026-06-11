@@ -80,7 +80,9 @@ def reduce_sum(x):
 
 def main():
     rng = np.random.default_rng(3)
-    n = 50_000
+    # Kept modest because every thread is *interpreted* in Python under the CUDA
+    # simulator; on a real GPU you would push millions of elements per launch.
+    n = 4096
     x = rng.standard_normal(n).astype(np.float32)
 
     got = reduce_sum(x)

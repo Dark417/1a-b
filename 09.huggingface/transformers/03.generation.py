@@ -1,27 +1,16 @@
 """
 03.generation.py — Decoding Strategies for Text Generation
 ===========================================================
-Autoregressive generation: at each step, the model produces logits over the
-entire vocabulary; a *decoding strategy* picks the next token from those logits.
-
-Math intuition (brief):
-
-  - **Greedy**: next = argmax(logits)  — deterministic, can be repetitive
-  - **Beam search**: keep top-B hypotheses; score = sum of log-probs
-  - **Temperature**: divide logits by T before softmax
-        P(token) = softmax(logits / T)
-        T→0 : greedy; T→∞ : uniform distribution; T<1 sharpens, T>1 flattens
-  - **Top-k**: zero out all but the top-k logits, then sample
-  - **Top-p (nucleus)**: keep the smallest set of tokens whose cumulative
-        probability ≥ p, then sample; adapts vocabulary size per step
-  - **Repetition penalty**: logits[token] /= penalty if token was seen before
-  - **no_repeat_ngram_size**: block any n-gram that has already appeared
+HuggingFace provides a rich generate() API that wraps many decoding algorithms.
+This module demonstrates each strategy with tiny-gpt2 and explains the math.
 
 Official docs:
-  - https://huggingface.co/docs/transformers/generation_strategies
-  - https://huggingface.co/docs/transformers/main_classes/text_generation
+  https://huggingface.co/docs/transformers/generation_strategies
+  https://huggingface.co/docs/transformers/main_classes/text_generation
 
-Tiny model used: sshleifer/tiny-gpt2
+Tiny model: sshleifer/tiny-gpt2 (fast on CPU, ~1M params)
+
+Math intuitions inline in comments.
 """
 
 import sys, os
@@ -32,212 +21,207 @@ import torch
 torch.set_num_threads(1)
 torch.manual_seed(0)
 
-from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig
+import torch.nn as nn
+from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig, GPT2Config, GPT2LMHeadModel
 
-PROMPT = "Once upon a time"
-MAX_NEW = 30
-
-# ─── Load model once (shared across all examples) ────────────────────────────
-banner("Loading sshleifer/tiny-gpt2")
+# ─── Load model once; reuse throughout ────────────────────────────────────────
+banner("Loading tiny-gpt2 for all generation experiments")
 
 ok_tok, tok = safe(AutoTokenizer.from_pretrained, "sshleifer/tiny-gpt2")
 ok_mdl, model = safe(AutoModelForCausalLM.from_pretrained, "sshleifer/tiny-gpt2")
 
-if ok_tok and ok_mdl:
-    tok.pad_token = tok.eos_token           # GPT-2 has no pad token
+USING_LIVE = ok_tok and ok_mdl
+
+if USING_LIVE:
+    tok.pad_token = tok.eos_token     # GPT-2 has no pad token
     model.eval()
-    inputs = tok(PROMPT, return_tensors="pt")
-    MODEL_AVAILABLE = True
-    print(f"  Model loaded. vocab_size={model.config.vocab_size}")
+    VOCAB = tok.vocab_size
+    prompt = "The future of artificial intelligence is"
+    inputs = tok(prompt, return_tensors="pt")
+    print(f"  Model loaded! Vocab={VOCAB}, prompt tokens={inputs['input_ids'].shape[1]}")
 else:
-    note_skip(f"tok={ok_tok} model={ok_mdl}")
-    MODEL_AVAILABLE = False
-    print("  Showing GenerationConfig API shape only (all strategies still constructed).")
+    note_skip(str(model if not ok_mdl else tok))
+    # Build a tiny GPT-2 from scratch for shape demonstrations
+    cfg = GPT2Config(n_embd=64, n_head=2, n_layer=2, vocab_size=1000,
+                     n_positions=64, n_ctx=64)
+    model = GPT2LMHeadModel(cfg)
+    model.eval()
+    VOCAB = 1000
+    # Create simple tokenizer shim
+    class TinyTok:
+        pad_token_id = 0
+        eos_token_id = 0
+        bos_token_id = 0
+        def __call__(self, text, return_tensors=None):
+            # Produce 5 fake tokens
+            ids = torch.randint(1, VOCAB, (1, 5))
+            return {"input_ids": ids, "attention_mask": torch.ones_like(ids)}
+        def decode(self, ids, skip_special_tokens=True):
+            return f"<decoded {len(ids) if hasattr(ids, '__len__') else '?'} tokens>"
+    tok = TinyTok()
+    inputs = tok("fake prompt", return_tensors="pt")
+    print("  [fallback] Using tiny GPT-2 built from scratch (random weights)")
 
 
-def decode(ids):
-    """Decode token ids → string."""
-    return tok.decode(ids[0], skip_special_tokens=True)
-
-
-def gen(**kwargs):
-    """Run model.generate with shared inputs; return decoded string."""
-    if not MODEL_AVAILABLE:
-        return "[skip]"
-    with torch.no_grad():
-        out = model.generate(
-            **inputs,
-            max_new_tokens=MAX_NEW,
-            pad_token_id=tok.eos_token_id,
-            **kwargs,
-        )
-    return decode(out)
-
-
-# ─── 1. Greedy decoding ──────────────────────────────────────────────────────
-banner("1. Greedy Decoding (do_sample=False, num_beams=1)")
-# At each step: next_token = argmax(logits)
-# Fast and deterministic. Tends to produce repetitive, "safe" text.
-text = gen(do_sample=False)
-print(f"  Greedy: {text!r}")
-
-# ─── 2. Beam Search ───────────────────────────────────────────────────────────
-banner("2. Beam Search (num_beams=4)")
-# Maintains B=4 partial hypotheses simultaneously.
-# Each step: expand each hypothesis → pick top-B by cumulative log-prob.
-# Higher beam count → better quality but slower (quadratic memory in beam×vocab).
-text = gen(num_beams=4, do_sample=False, early_stopping=True)
-print(f"  Beam-4: {text!r}")
-
-# Multiple sequences via beam search
-if MODEL_AVAILABLE:
-    with torch.no_grad():
-        outs = model.generate(
-            **inputs,
-            max_new_tokens=MAX_NEW,
-            num_beams=4,
-            num_return_sequences=2,   # return 2 of the 4 beams
-            pad_token_id=tok.eos_token_id,
-        )
-    for i, seq in enumerate(outs):
-        print(f"  Beam seq {i}: {decode(seq.unsqueeze(0))!r}")
-
-# ─── 3. Sampling (do_sample=True) ────────────────────────────────────────────
-banner("3. Pure Sampling (do_sample=True, temperature=1.0)")
-# Sample from the full vocabulary distribution at each step.
-# Stochastic: different seed → different output.
-torch.manual_seed(42)
-text = gen(do_sample=True, temperature=1.0)
-print(f"  Sample T=1.0: {text!r}")
-
-# ─── 4. Temperature scaling ───────────────────────────────────────────────────
-banner("4. Temperature (T=0.3 vs T=1.5)")
-# T < 1 sharpens distribution → more predictable (closer to greedy)
-# T > 1 flattens distribution → more random / creative
-torch.manual_seed(42)
-text_low = gen(do_sample=True, temperature=0.3)
-torch.manual_seed(42)
-text_high = gen(do_sample=True, temperature=1.5)
-print(f"  T=0.3  (sharp)  : {text_low!r}")
-print(f"  T=1.5  (flat)   : {text_high!r}")
-
-# ─── 5. Top-k Sampling ────────────────────────────────────────────────────────
-banner("5. Top-k Sampling (top_k=50)")
-# Zero out all but the top-50 logits by probability, then sample.
-# Prevents drawing from very low-probability tokens but uses fixed k.
-torch.manual_seed(42)
-text = gen(do_sample=True, top_k=50, temperature=1.0)
-print(f"  top_k=50: {text!r}")
-
-# ─── 6. Top-p (Nucleus) Sampling ─────────────────────────────────────────────
-banner("6. Top-p / Nucleus Sampling (top_p=0.92)")
-# Sort tokens by descending probability; keep the minimum set whose CDF ≥ p=0.92.
-# Adapts: when the model is confident, k is small; when uncertain, k is large.
-# Often combined with temperature for best results.
-torch.manual_seed(42)
-text = gen(do_sample=True, top_p=0.92, temperature=0.9)
-print(f"  top_p=0.92: {text!r}")
-
-# Combined top_k + top_p (common production setting)
-torch.manual_seed(42)
-text = gen(do_sample=True, top_k=50, top_p=0.95, temperature=0.8)
-print(f"  top_k=50 + top_p=0.95: {text!r}")
-
-# ─── 7. Repetition Penalty ────────────────────────────────────────────────────
-banner("7. Repetition Penalty (repetition_penalty=1.3)")
-# For each token that has already appeared: logit /= penalty (if logit > 0)
-#                                            logit *= penalty (if logit < 0)
-# penalty=1.0 = no effect; penalty>1.0 discourages repeats.
-torch.manual_seed(42)
-text = gen(do_sample=False, repetition_penalty=1.3)
-print(f"  rep_penalty=1.3: {text!r}")
-
-# ─── 8. no_repeat_ngram_size ─────────────────────────────────────────────────
-banner("8. no_repeat_ngram_size=3")
-# Hard constraint: never produce an n-gram that has already appeared.
-# n=3 means no trigram repeats; n=2 no bigram repeats.
-# Stronger than repetition_penalty; works by setting banned n-gram logits = -inf.
-torch.manual_seed(42)
-text = gen(do_sample=False, no_repeat_ngram_size=3)
-print(f"  no_repeat_ngram=3: {text!r}")
-
-# ─── 9. num_return_sequences with sampling ────────────────────────────────────
-banner("9. num_return_sequences=3 (sampling)")
-# Generate 3 independent samples in a single forward pass (batch expansion)
-if MODEL_AVAILABLE:
+def gen(extra_label="", **kwargs):
+    """Helper: generate and decode, return text."""
     torch.manual_seed(42)
+    # Always set pad_token_id to avoid warning
+    kwargs.setdefault("pad_token_id", tok.eos_token_id if hasattr(tok, "eos_token_id") else 0)
     with torch.no_grad():
-        outs = model.generate(
-            **inputs,
-            max_new_tokens=20,
-            do_sample=True,
-            temperature=0.9,
-            top_p=0.9,
-            num_return_sequences=3,
-            pad_token_id=tok.eos_token_id,
-        )
-    for i, seq in enumerate(outs):
-        print(f"  Seq {i}: {decode(seq.unsqueeze(0))!r}")
-else:
-    print("  [skip] showing shape: outs.shape = (num_return_sequences, gen_len)")
+        out = model.generate(**inputs, max_new_tokens=20, **kwargs)
+    text = tok.decode(out[0], skip_special_tokens=True)
+    print(f"  [{extra_label}] {text!r}")
+    return text
 
-# ─── 10. GenerationConfig ─────────────────────────────────────────────────────
-banner("10. GenerationConfig — serialisable strategy config")
-# GenerationConfig bundles all generation kwargs into a saveable config object.
-# model.generation_config is the model's default; override per call.
 
-# Build a config for creative writing
-creative_cfg = GenerationConfig(
+# ─── 1. Greedy Decoding ───────────────────────────────────────────────────────
+banner("1. Greedy Decoding")
+# Algorithm: at each step, pick the token with highest probability.
+#   next_token = argmax P(token | context)
+# Properties:
+#   + Deterministic, fast
+#   - Repetitive, can miss the globally optimal sequence
+#   - do_sample=False (default) enables greedy
+
+gen("greedy", do_sample=False)
+
+# ─── 2. Beam Search ──────────────────────────────────────────────────────────
+banner("2. Beam Search")
+# Algorithm: keep top-k (= num_beams) candidate sequences at each step.
+#   Score = sum log P(token_i | context)
+# Properties:
+#   + Better than greedy (explores more paths)
+#   - More memory: stores num_beams × seq_len tokens
+#   - Can still be repetitive for open-ended generation
+# num_beams=1 degenerates to greedy.
+
+gen("beam-5", do_sample=False, num_beams=5, early_stopping=True)
+gen("beam-3", do_sample=False, num_beams=3)
+
+# ─── 3. Sampling ─────────────────────────────────────────────────────────────
+banner("3. Random Sampling (do_sample=True)")
+# Algorithm: sample from the full vocabulary distribution each step.
+#   next_token ~ Categorical(softmax(logits))
+# Properties:
+#   + Diverse, creative outputs
+#   - Can produce incoherent low-probability tokens
+
+torch.manual_seed(0)
+gen("sample", do_sample=True)
+
+# ─── 4. Temperature Scaling ───────────────────────────────────────────────────
+banner("4. Temperature Scaling")
+# Modifies the logit distribution BEFORE softmax:
+#   P(token) = softmax(logits / T)
+#
+#   T → 0  : sharper distribution, converges to greedy
+#   T = 1  : original distribution
+#   T → ∞  : uniform distribution, pure random
+#
+# Low temperature = conservative / focused
+# High temperature = creative / risky
+
+torch.manual_seed(0)
+gen("temp=0.3 (sharp)", do_sample=True, temperature=0.3)
+torch.manual_seed(0)
+gen("temp=1.0 (neutral)", do_sample=True, temperature=1.0)
+torch.manual_seed(0)
+gen("temp=1.5 (creative)", do_sample=True, temperature=1.5)
+
+# ─── 5. Top-k Sampling ───────────────────────────────────────────────────────
+banner("5. Top-k Sampling")
+# Algorithm: at each step, keep only the k most likely tokens, re-normalize,
+#   then sample from that reduced distribution.
+#   top_k = 1 → greedy; top_k = vocab_size → full sampling
+#
+# Properties:
+#   + Prevents very low-probability tokens
+#   - k is fixed regardless of distribution shape
+
+torch.manual_seed(0)
+gen("top-k=10", do_sample=True, top_k=10)
+torch.manual_seed(0)
+gen("top-k=50", do_sample=True, top_k=50)
+
+# ─── 6. Top-p / Nucleus Sampling ─────────────────────────────────────────────
+banner("6. Top-p (Nucleus) Sampling")
+# Algorithm: sort tokens by probability descending, keep the smallest set
+#   whose cumulative probability ≥ p, then sample from that set.
+#   Formally: nucleus = {v : Σ P(v') >= p, sorted by P desc}
+#
+# Properties:
+#   + Adapts to distribution shape (more tokens when distribution is flat)
+#   + Avoids low-prob garbage
+#   top_p=1.0 → no restriction; top_p=0.9 is a common default
+
+torch.manual_seed(0)
+gen("top-p=0.9", do_sample=True, top_p=0.9)
+torch.manual_seed(0)
+gen("top-p=0.95+top-k=50", do_sample=True, top_p=0.95, top_k=50)
+
+# ─── 7. Repetition Penalty ───────────────────────────────────────────────────
+banner("7. Repetition Penalty")
+# Divides the logit of any token that already appeared in context:
+#   logit_i /= repetition_penalty  (if logit_i > 0)
+#   logit_i *= repetition_penalty  (if logit_i < 0)
+# Values > 1.0 discourage repeating; 1.0 = no effect.
+
+torch.manual_seed(0)
+gen("rep=1.0 (off)", do_sample=False, repetition_penalty=1.0)
+torch.manual_seed(0)
+gen("rep=1.3", do_sample=False, repetition_penalty=1.3)
+
+# ─── 8. No-repeat n-gram ─────────────────────────────────────────────────────
+banner("8. no_repeat_ngram_size")
+# Hard constraint: if an n-gram has already appeared in the output,
+# forbid completing it again.
+# no_repeat_ngram_size=3 → no 3-gram can repeat.
+
+torch.manual_seed(0)
+gen("no_repeat_ngram=3", do_sample=False, no_repeat_ngram_size=3)
+
+# ─── 9. num_return_sequences ─────────────────────────────────────────────────
+banner("9. num_return_sequences")
+# Return multiple completions in one call.
+# Requires do_sample=True OR num_beams >= num_return_sequences.
+
+torch.manual_seed(0)
+pad_id = tok.eos_token_id if hasattr(tok, "eos_token_id") else 0
+with torch.no_grad():
+    outs = model.generate(
+        **inputs,
+        max_new_tokens=15,
+        do_sample=True,
+        temperature=1.0,
+        num_return_sequences=3,
+        pad_token_id=pad_id,
+    )
+for i, o in enumerate(outs):
+    print(f"  seq {i}: {tok.decode(o, skip_special_tokens=True)!r}")
+
+# ─── 10. GenerationConfig ────────────────────────────────────────────────────
+banner("10. GenerationConfig — bundle all gen params")
+# GenerationConfig stores all generation hyperparameters.
+# Can be saved to disk alongside the model checkpoint.
+# model.generation_config is the default for that model.
+
+gen_cfg = GenerationConfig(
+    max_new_tokens=15,
     do_sample=True,
-    temperature=0.85,
-    top_k=60,
+    temperature=0.8,
+    top_k=40,
     top_p=0.92,
-    repetition_penalty=1.2,
+    repetition_penalty=1.1,
     no_repeat_ngram_size=3,
-    max_new_tokens=40,
     num_return_sequences=1,
 )
-print(f"  creative_cfg.do_sample    : {creative_cfg.do_sample}")
-print(f"  creative_cfg.temperature  : {creative_cfg.temperature}")
-print(f"  creative_cfg.top_k        : {creative_cfg.top_k}")
+print(f"  GenerationConfig:\n  {gen_cfg}")
 
-if MODEL_AVAILABLE:
-    torch.manual_seed(42)
-    with torch.no_grad():
-        out = model.generate(
-            **inputs,
-            generation_config=creative_cfg,
-            pad_token_id=tok.eos_token_id,
-        )
-    print(f"  Generated with config: {decode(out)!r}")
-else:
-    print("  [skip] model unavailable; GenerationConfig object constructed OK")
-
-# Show model's built-in default GenerationConfig
-if MODEL_AVAILABLE:
-    print(f"\n  model.generation_config keys: {list(model.generation_config.to_dict().keys())[:8]} …")
-
-# ─── 11. Length control kwargs ────────────────────────────────────────────────
-banner("11. Length control: min_length, max_new_tokens, eos_token_id")
-# max_new_tokens: how many NEW tokens to generate (does not count prompt)
-# max_length: total length including prompt (deprecated for max_new_tokens)
-# min_new_tokens: minimum NEW tokens before EOS is allowed
-# forced_eos_token_id: always end with this token id
-
-if MODEL_AVAILABLE:
-    with torch.no_grad():
-        out = model.generate(
-            **inputs,
-            max_new_tokens=15,
-            min_new_tokens=5,
-            do_sample=False,
-            pad_token_id=tok.eos_token_id,
-        )
-    n_new = out.shape[1] - inputs['input_ids'].shape[1]
-    print(f"  Prompt tokens: {inputs['input_ids'].shape[1]}")
-    print(f"  New tokens generated: {n_new}")
-    print(f"  Full output: {decode(out)!r}")
-else:
-    print("  [skip] demonstrating kwargs: max_new_tokens=15, min_new_tokens=5")
+torch.manual_seed(42)
+with torch.no_grad():
+    out = model.generate(**inputs, generation_config=gen_cfg,
+                         pad_token_id=pad_id)
+print(f"  Output: {tok.decode(out[0], skip_special_tokens=True)!r}")
 
 print("\n[DONE] 03.generation.py complete")

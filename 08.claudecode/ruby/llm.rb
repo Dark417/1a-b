@@ -146,15 +146,14 @@ module MiniAgent
       end
 
       unless made.include?("write_file")
-        program = <<~PY
-          print("hello from the mini coding agent")
-          puts_equiv = 2 + 2
-          print("2 + 2 =", puts_equiv)
-        PY
+        program = <<~RB
+          puts "hello from the mini coding agent"
+          puts "2 + 2 = #{2 + 2}"
+        RB
         return Step.new(
-          text: "The directory is empty. I'll create a small program `hello.py`.",
+          text: "The directory is empty. I'll create a small program `hello.rb`.",
           tool_calls: [ToolCall.new(id: next_id, name: "write_file",
-                                    args: { path: "hello.py", content: program })]
+                                    args: { path: "hello.rb", content: program })]
         )
       end
 
@@ -162,13 +161,13 @@ module MiniAgent
         return Step.new(
           text: "Now I'll run the program to verify it works.",
           tool_calls: [ToolCall.new(id: next_id, name: "bash",
-                                    args: { command: "python3 hello.py" })]
+                                    args: { command: "ruby hello.rb" })]
         )
       end
 
       last = state.observations.last.to_s
       Step.new(
-        text: "Done. I created `hello.py` and ran it successfully. " \
+        text: "Done. I created `hello.rb` and ran it successfully. " \
               "Its output was:\n#{last.strip}\nThe task is complete.",
         done: true
       )
