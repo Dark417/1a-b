@@ -1,0 +1,8 @@
+# MCP Python SDK tutorial — pinned deps for THIS tutorial.
+# The official MCP Python SDK. Bundles both the low-level Server/ClientSession
+# machinery and the high-level FastMCP server builder.
+#   https://github.com/modelcontextprotocol/python-sdk
+mcp>=1.9.0
+
+# Every .py in this folder degrades gracefully to a stdlib-only fallback if the
+# package above is missing, so the tutorial still runs offline with no installs.
