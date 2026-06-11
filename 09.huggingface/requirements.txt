@@ -1,0 +1,16 @@
+# Hugging Face ecosystem tutorial — pinned to versions validated for section 09.
+# Install:  pip install -r requirements.txt
+# Everything here runs on CPU with TINY models; no GPU or API key required.
+
+torch>=2.2                 # backend for transformers / peft / trl / diffusers
+transformers>=4.44         # models, tokenizers wrappers, pipelines, Trainer, generation
+datasets>=2.20             # load/stream/map Arrow-backed datasets
+tokenizers>=0.19           # fast Rust tokenizers; train BPE/WordPiece from scratch
+huggingface_hub>=0.24      # Hub client: download/upload, HfApi, model cards
+accelerate>=0.33           # device placement, mixed precision, distributed launch
+peft>=0.12                 # LoRA / adapters
+trl>=0.9                   # SFTTrainer / DPO / reward modelling
+diffusers>=0.30            # diffusion pipelines (image/audio generation)
+sentence-transformers>=3.0 # bi-encoder embeddings + semantic search
+evaluate>=0.4              # metrics (accuracy, f1, rouge, ...) used in workflow/eval
+scikit-learn>=1.3          # metric helpers some `evaluate` paths fall back to
