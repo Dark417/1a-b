@@ -105,42 +105,44 @@ peft_model.eval()
 banner("3. save_pretrained — adapter-only checkpoint (tiny file)")
 
 with tempfile.TemporaryDirectory() as ckpt_dir:
-    adapter_dir = os.path.join(ckpt_dir, "adapter_A")
-    peft_model.save_pretrained(adapter_dir)
+    save_dir = os.path.join(ckpt_dir, "checkpoint")
+    peft_model.save_pretrained(save_dir)
+    # When adapter_name="adapter_A" is used, save_pretrained creates:
+    #   checkpoint/adapter_A/adapter_config.json
+    #   checkpoint/adapter_A/adapter_model.safetensors
+    # The load path must point to the named subfolder.
+    adapter_dir = os.path.join(save_dir, "adapter_A")
 
     # Show what was saved — should be tiny
     files = []
-    for root, dirs, fnames in os.walk(adapter_dir):
+    for root, dirs, fnames in os.walk(save_dir):
         for f in fnames:
             path = os.path.join(root, f)
             size = os.path.getsize(path)
             files.append((os.path.relpath(path, ckpt_dir), size))
 
-    print(f"  Saved to: {adapter_dir}/")
+    print(f"  Saved to: {save_dir}/")
     for relpath, sz in sorted(files):
-        print(f"    {relpath:<50}  {sz/1024:.1f} KB")
+        print(f"    {relpath:<60}  {sz/1024:.1f} KB")
     total_kb = sum(sz for _, sz in files) / 1024
-    print(f"  Total adapter size: {total_kb:.1f} KB  (vs {n_base*4/1024:.0f} KB for full base)")
+    print(f"  Total checkpoint size: {total_kb:.1f} KB  (vs {n_base*4/1024:.0f} KB for full base)")
+    print(f"  Adapter files are at: {adapter_dir}/")
 
     # ── 4. PeftModel.from_pretrained onto fresh base ───────────────────────
     banner("4. PeftModel.from_pretrained — load adapter onto fresh base")
 
     # Build a FRESH base (without LoRA) to demonstrate loading
-    fresh_base = build_local_model() if VOCAB_SIZE == 256 else (
-        lambda: __import__('transformers').AutoModelForCausalLM.from_pretrained(
-            "sshleifer/tiny-gpt2"
-        )
-    )()
-
-    # If we loaded from hub, reload it
     if VOCAB_SIZE != 256:
         ok2, fresh_base = safe(load_hub_model)
         if not ok2:
             fresh_base = build_local_model()
+    else:
+        fresh_base = build_local_model()
 
     fresh_base.eval()
 
     # Load adapter on top of fresh base
+    # Pass the named-adapter subdirectory (adapter_dir = .../checkpoint/adapter_A)
     loaded_peft = PeftModel.from_pretrained(fresh_base, adapter_dir)
     loaded_peft.eval()
     print("  PeftModel.from_pretrained() succeeded")
