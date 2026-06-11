@@ -144,7 +144,13 @@ print("Features after full cast:", ds_feats.features)
 # ---------------------------------------------------------------------------
 banner("5. rename_column() + remove_columns()")
 
-ds_ren = ds_batched.rename_column("text", "sentence")
+# ds_batched has: text, label, score, n_chars, score_bin
+# ds_mapped has:  text, label, score, n_words, text_upper
+# Combine both via a fresh map that adds all columns, then demo rename/remove
+ds_full = ds.map(add_word_count).map(batch_add_char_count, batched=True)
+print("Full columns before rename:", ds_full.column_names)
+
+ds_ren = ds_full.rename_column("text", "sentence")
 print("After rename:", ds_ren.column_names)
 
 ds_clean = ds_ren.remove_columns(["text_upper", "score_bin"])

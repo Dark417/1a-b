@@ -169,7 +169,7 @@ for wid in sorted(word_groups):
 # ---------------------------------------------------------------------------
 # 4. char_to_token — character index → token index
 # ---------------------------------------------------------------------------
-banner("4. char_to_token(sequence_index, char_pos)")
+banner("4. char_to_token(char_pos, sequence_index=0)")
 
 reference = "Hello world"
 enc3 = tokenizer.encode(reference)
@@ -179,10 +179,11 @@ print("Offsets :", enc3.offsets)
 print()
 
 # For every character, find which token contains it
+# API: enc.char_to_token(char_pos, sequence_index=0)
 print("Character → token mapping:")
 for char_idx in range(len(reference)):
     char = reference[char_idx]
-    tok_idx = enc3.char_to_token(0, char_idx)
+    tok_idx = enc3.char_to_token(char_idx)   # sequence_index defaults to 0
     tok_str = enc3.tokens[tok_idx] if tok_idx is not None else "N/A"
     print(f"  char[{char_idx}]={char!r:3}  → token_idx={tok_idx}  token={tok_str!r}")
 
@@ -190,14 +191,14 @@ for char_idx in range(len(reference)):
 # ---------------------------------------------------------------------------
 # 5. token_to_chars — token index → (start_char, end_char)
 # ---------------------------------------------------------------------------
-banner("5. token_to_chars(sequence_index, token_index)")
+banner("5. token_to_chars(token_index)")
 
 print("Sentence:", reference)
 print("Tokens  :", enc3.tokens)
 print()
 print("Token → character span:")
 for tok_idx, token in enumerate(enc3.tokens):
-    char_span = enc3.token_to_chars(0, tok_idx)
+    char_span = enc3.token_to_chars(tok_idx)   # returns (start, end) or None
     if char_span is not None:
         s, e = char_span
         original = reference[s:e]
@@ -222,17 +223,19 @@ print()
 n_words = len(set(wid for wid in enc4.word_ids if wid is not None))
 print(f"Number of source words: {n_words}")
 
-print("word_to_tokens(seq=0, word_idx):")
+# API: enc.word_to_tokens(word_index, sequence_index=0)
+print("word_to_tokens(word_idx, sequence_index=0):")
 for word_idx in range(n_words):
-    span = enc4.word_to_tokens(0, word_idx)
+    span = enc4.word_to_tokens(word_idx)   # sequence_index defaults to 0
     if span:
         token_start, token_end = span
         word_tokens = enc4.tokens[token_start:token_end]
         print(f"  word {word_idx} → tokens[{token_start}:{token_end}] = {word_tokens}")
 
-print("\ntoken_to_word(seq=0, token_idx):")
+# API: enc.token_to_word(token_index)
+print("\ntoken_to_word(token_idx):")
 for tok_idx, token in enumerate(enc4.tokens):
-    wid = enc4.token_to_word(0, tok_idx)
+    wid = enc4.token_to_word(tok_idx)
     print(f"  token[{tok_idx}]={token!r:15} → word_id={wid}")
 
 

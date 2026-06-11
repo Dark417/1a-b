@@ -163,7 +163,16 @@ banner("6. Per-Head Attention Analysis")
 # Different heads attend to different linguistic patterns.
 # We can inspect which tokens each head focuses on.
 
-layer0_att = full_out.attentions[0]   # (batch, heads, seq, seq)
+# Guard: some model configs may not populate attentions in the combined call
+if full_out.attentions is None or len(full_out.attentions) == 0:
+    # Re-run with only output_attentions to ensure we get them
+    with torch.no_grad():
+        att_only_out = model(**inp, output_attentions=True)
+    att_source = att_only_out.attentions
+else:
+    att_source = full_out.attentions
+
+layer0_att = att_source[0]   # (batch, heads, seq, seq)
 print(f"  Layer 0 attention shape: {tuple(layer0_att.shape)}")
 
 for h in range(NUM_HEADS):

@@ -222,12 +222,12 @@ training_args = TrainingArguments(
     logging_steps=1,
     report_to="none",                 # no wandb / tensorboard
     seed=42,
-    no_cuda=True,                     # force CPU
+    use_cpu=True,                     # force CPU (replaces deprecated no_cuda)
     dataloader_num_workers=0,         # single-process dataloader
 )
 print(f"  Epochs         : {training_args.num_train_epochs}")
 print(f"  Train batch    : {training_args.per_device_train_batch_size}")
-print(f"  Device         : {'cpu' if training_args.no_cuda else 'gpu'}")
+print(f"  Device         : cpu (use_cpu=True)")
 
 # ─── 7. Create Trainer and train ─────────────────────────────────────────────
 banner("7. Trainer — train + evaluate")
