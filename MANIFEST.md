@@ -60,6 +60,15 @@ PyTorch** for each novel mechanism.
 
 ## 07.frameworks/ — the LLM/agent engineering stack (exhaustive)
 
+> **Build status (in progress).** A parallel authoring wave was interrupted by an
+> account usage limit (resets 4:30pm UTC). Current coverage:
+> - **Substantial:** `rag/`, `agents/`, `mcp/`, `evaluation/`, `observability/`,
+>   `fine-tuning/`, `embeddings/`, `vector-databases/`.
+> - **Remaining (to author on resume):** `serving-inference/`, `data-processing/`,
+>   `orchestration/`, `prompt-engineering/`, `guardrails/`.
+> A consolidated `python <file>.py` validation sweep across all committed
+> framework examples is also pending (to confirm the offline-runnable contract).
+
 Each framework: its own folder with a full-feature `README.md` + numbered
 runnable example files + an end-to-end `app.py`. Areas and frameworks:
 
